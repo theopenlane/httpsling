@@ -7,7 +7,7 @@ require (
 	github.com/goccy/go-yaml v1.12.0
 	github.com/google/go-querystring v1.1.0
 	github.com/stretchr/testify v1.9.0
-	github.com/theopenlane/utils v0.1.1
+	github.com/theopenlane/utils v0.1.5
 	github.com/valyala/bytebufferpool v1.0.0
 )
 
@@ -27,7 +27,6 @@ require (
 	github.com/theopenlane/echox v0.1.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -53,8 +53,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/theopenlane/echox v0.1.0 h1:y4Z2shaODCLwXHsHBrY/EkH/2sIuo49xdIfxx7h+Zvg=
 github.com/theopenlane/echox v0.1.0/go.mod h1:RaynhPvY9qbLOVlcO7Js1NqZ66+CP9hVBa0c7ehNYA4=
-github.com/theopenlane/utils v0.1.1 h1:GoPrIE8tmmC1VGlp+QmVTvrgBlHwe8e8FqLw2IPdgmY=
-github.com/theopenlane/utils v0.1.1/go.mod h1:37sJeeuIsmMbMFE2nKglmEQUJenTccxh5WxkJtyuZUw=
+github.com/theopenlane/utils v0.1.5 h1:4DRieQmsBF87n4lPjEkTt6s4iVRQaCGYlk2+C05lt3o=
+github.com/theopenlane/utils v0.1.5/go.mod h1:LWJzG9FfklsLlqWx/VdmfBMuNk700cWqHAwQL0299FM=
 github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
