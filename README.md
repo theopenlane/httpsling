@@ -1,3 +1,10 @@
+[![Build status](https://badge.buildkite.com/f74a461120ffcadbf7796d5aac8ae8c03a1cbcfda142220074.svg)](https://buildkite.com/theopenlane/httpsling)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=theopenlane_httpsling&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=theopenlane_httpsling)
+[![Go Report Card](https://goreportcard.com/badge/github.com/theopenlane/httpsling)](https://goreportcard.com/report/github.com/theopenlane/httpsling)
+[![Go Reference](https://pkg.go.dev/badge/github.com/theopenlane/httpsling.svg)](https://pkg.go.dev/github.com/theopenlane/httpsling)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache2.0-brightgreen.svg)](https://opensource.org/licenses/Apache-2.0)
+
+
 # Slinging HTTP
 
 The `httpsling` library simplifies the way you make HTTP httpsling. It's intended to provide an easy-to-use interface for sending requests and handling responses, reducing the boilerplate code typically associated with the `net/http` package.
@@ -36,9 +43,9 @@ func main() {
 }
 ```
 
-## Client
+## SlingClient
 
-The `Client` struct is your gateway to making HTTP requests. You can configure it to your needs, setting default headers, cookies, timeout durations, etc.
+The `SlingClient` struct is your gateway to making HTTP requests. You can configure it to your needs, setting default headers, cookies, timeout durations, etc.
 
 ```go
 client := httpsling.URL("http://mattisthebest.com")
@@ -53,9 +60,9 @@ client = httpsling.Create(&httpsling.Config{
 })
 ```
 
-### Initializing the Client
+### Initializing the SlingClient
 
-You can start by creating a `Client` with specific configurations using the `Create` method:
+You can start by creating a `SlingClient` with specific configurations using the `Create` method:
 
 ```go
 client := httpsling.Create(&httpsling.Config{
@@ -77,7 +84,7 @@ client := httpsling.Create(&httpsling.Config{
 })
 ```
 
-This setup creates a `Client` tailored for your API communication, including base URL, request timeout, default headers, and cookies
+This setup creates a `SlingClient` tailored for your API communication, including base URL, request timeout, default headers, and cookies
 
 ### Configuring with Set Methods
 
@@ -332,7 +339,7 @@ request.Headers(http.Header{HeaderContentType: []string{ContentTypeJSON}})
 // Convenient methods for common headers
 request.ContentType(ContentTypeJSON)
 request.Accept(ContentTypeJSON)
-request.UserAgent("MyCustomClient/1.0")
+request.UserAgent("MyCustomSlingClient/1.0")
 request.Referer("https://example.com")
 ```
 
@@ -412,13 +419,13 @@ if errors.Is(err, context.Canceled) {
 }
 ```
 
-#### HTTP Client Customization
+#### HTTP SlingClient Customization
 
-Directly customize the underlying `http.Client`:
+Directly customize the underlying `http.SlingClient`:
 
 ```go
-customHTTPClient := &http.Client{Timeout: 20 * time.Second}
-client.SetHTTPClient(customHTTPClient)
+customHTTPSlingClient := &http.SlingClient{Timeout: 20 * time.Second}
+client.SetHTTPSlingClient(customHTTPSlingClient)
 ```
 
 #### Path Parameters
@@ -494,11 +501,11 @@ request.AddMiddleware(func(next httpsling.MiddlewareHandlerFunc) httpsling.Middl
 
 Middleware functions wrap around HTTP requests, allowing pre- and post-processing of requests and responses. They can modify requests before they are sent, examine responses, and decide whether to modify them, retry the request, or take other actions.
 
-### Client-Level Middleware
+### SlingClient-Level Middleware
 
-Client-level middleware is applied to all requests made by a client. It's ideal for cross-cutting concerns like logging, error handling, and metrics collection.
+SlingClient-level middleware is applied to all requests made by a client. It's ideal for cross-cutting concerns like logging, error handling, and metrics collection.
 
-**Adding Middleware to a Client:**
+**Adding Middleware to a SlingClient:**
 
 ```go
 client := httpsling.Create(&httpsling.Config{BaseURL: "https://the.cats.meow.com"})
@@ -864,6 +871,6 @@ This library was inspired by and built upon the work of several other HTTP clien
 - [Dghubble/sling](https://github.com/dghubble/sling)
 - [Monaco-io/request](https://github.com/monaco-io/request)
 - [Go-resty/resty](https://github.com/go-resty/resty)
-- [Fiber Client](https://github.com/gofiber/fiber)
+- [Fiber SlingClient](https://github.com/gofiber/fiber)
 
 Props to dghubble for a great name with `sling`, which was totally ripped off to make `httpsling` <3. I chose not to use any of these directly because I wanted to have layers of control we may need within our services echosystem.

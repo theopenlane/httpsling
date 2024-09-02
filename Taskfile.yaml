@@ -31,6 +31,13 @@ tasks:
     cmds:
       - go mod tidy
 
+  go:test:cover:
+    desc: runs and outputs results of created go tests with coverage
+    aliases: [cover]
+    cmds:
+      - go test -v ./... -coverprofile=coverage.out
+      - go tool cover -html=coverage.out
+
   go:all:
     aliases: [go]
     desc: Runs all go test and lint related tasks
