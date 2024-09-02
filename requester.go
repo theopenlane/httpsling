@@ -112,6 +112,7 @@ func (r *Requester) Clone() *Requester {
 	s2.Trailer = cloneHeader(r.Trailer)
 	s2.URL = cloneURL(r.URL)
 	s2.QueryParams = cloneValues(r.QueryParams)
+
 	return &s2
 }
 
@@ -127,7 +128,6 @@ func (r *Requester) RequestContext(ctx context.Context, opts ...Option) (*http.R
 		return nil, err
 	}
 
-	// marshal body, if applicable
 	bodyData, ct, err := reqs.getRequestBody()
 	if err != nil {
 		return nil, err
@@ -156,7 +156,6 @@ func (r *Requester) RequestContext(ctx context.Context, opts ...Option) (*http.R
 		req.GetBody = reqs.GetBody
 	}
 
-	// copy the host
 	if reqs.Host != "" {
 		req.Host = reqs.Host
 	}
@@ -165,7 +164,6 @@ func (r *Requester) RequestContext(ctx context.Context, opts ...Option) (*http.R
 	req.Close = reqs.Close
 	req.Trailer = reqs.Trailer
 
-	// copy Headers pairs into new Header map
 	for k, v := range reqs.Header {
 		req.Header[k] = v
 	}
@@ -204,6 +202,7 @@ func (r *Requester) getRequestBody() (body io.Reader, contentType string, _ erro
 		if marshaler == nil {
 			marshaler = DefaultMarshaler
 		}
+
 		b, ct, err := marshaler.Marshal(r.Body)
 
 		if err != nil {
@@ -243,7 +242,7 @@ func (r *Requester) SendContext(ctx context.Context, opts ...Option) (*http.Resp
 	return reqs.Do(req)
 }
 
-// Do implements Doer.
+// Do implements Doer
 func (r *Requester) Do(req *http.Request) (*http.Response, error) {
 	doer := r.Doer
 	if doer == nil {

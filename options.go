@@ -38,7 +38,7 @@ func (r *Requester) With(opts ...Option) (*Requester, error) {
 	return r2, nil
 }
 
-// MustWith clones the Requester, then applies the options tothe clone
+// MustWith clones the Requester, then applies the options to the clone
 func (r *Requester) MustWith(opts ...Option) *Requester {
 	if r2, err := r.With(opts...); err != nil {
 		panic(err)
