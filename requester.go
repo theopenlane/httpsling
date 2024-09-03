@@ -3,13 +3,12 @@ package httpsling
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/ansel1/merry"
 )
 
 // Requester is a struct that contains the information needed to make an HTTP request
@@ -53,7 +52,7 @@ func New(options ...Option) (*Requester, error) {
 	err := b.Apply(options...)
 
 	if err != nil {
-		return nil, merry.Wrap(err)
+		return nil, err
 	}
 
 	return b, nil
@@ -91,25 +90,11 @@ func cloneValues(v url.Values) url.Values {
 	return v2
 }
 
-func cloneHeader(h http.Header) http.Header {
-	if h == nil {
-		return nil
-	}
-
-	h2 := make(http.Header)
-
-	for key, value := range h {
-		h2[key] = value
-	}
-
-	return h2
-}
-
 // Clone returns a deep copy of a Requester
 func (r *Requester) Clone() *Requester {
 	s2 := *r
-	s2.Header = cloneHeader(r.Header)
-	s2.Trailer = cloneHeader(r.Trailer)
+	s2.Header = r.Header.Clone()
+	s2.Trailer = r.Trailer.Clone()
 	s2.URL = cloneURL(r.URL)
 	s2.QueryParams = cloneValues(r.QueryParams)
 
@@ -123,67 +108,75 @@ func (r *Requester) Request(opts ...Option) (*http.Request, error) {
 
 // RequestContext does the same as Request, but requires a context
 func (r *Requester) RequestContext(ctx context.Context, opts ...Option) (*http.Request, error) {
-	reqs, err := r.withOpts(opts...)
+	requester, err := r.withOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	bodyData, ct, err := reqs.getRequestBody()
+	bodyData, contentType, err := requester.getRequestBody()
 	if err != nil {
 		return nil, err
 	}
 
-	urlS := ""
-	if reqs.URL != nil {
-		urlS = reqs.URL.String()
+	requestURL := ""
+	if requester.URL != nil {
+		requestURL = requester.URL.String()
 	}
 
-	req, err := http.NewRequest(reqs.Method, urlS, bodyData)
+	req, err := http.NewRequestWithContext(ctx, requester.Method, requestURL, bodyData)
 	if err != nil {
-		return nil, merry.Prepend(err, "creating request")
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	if requester.ContentLength != 0 {
+		req.ContentLength = requester.ContentLength
+	}
+
+	if requester.GetBody != nil {
+		req.GetBody = requester.GetBody
+	}
+
+	if requester.Host != "" {
+		req.Host = requester.Host
+	}
+
+	req.TransferEncoding = requester.TransferEncoding
+	req.Close = requester.Close
+
+	if requester.Trailer != nil {
+		req.Trailer = requester.Trailer.Clone()
+	}
+
+	if requester.Header != nil {
+		req.Header = requester.Header.Clone()
 	}
 
 	// if we marshaled the body, use our content type
-	if ct != "" {
-		req.Header.Set("Content-Type", ct)
+	if contentType != "" {
+		req.Header.Set(HeaderContentType, contentType)
 	}
 
-	if reqs.ContentLength != 0 {
-		req.ContentLength = reqs.ContentLength
+	if len(requester.QueryParams) > 0 {
+		req.URL.RawQuery = requester.getQueryParams(req)
 	}
 
-	if reqs.GetBody != nil {
-		req.GetBody = reqs.GetBody
+	return req, nil
+}
+
+func (r *Requester) getQueryParams(req *http.Request) string {
+	if req.URL.RawQuery == "" {
+		return r.QueryParams.Encode()
 	}
 
-	if reqs.Host != "" {
-		req.Host = reqs.Host
-	}
+	existingValues := req.URL.Query()
 
-	req.TransferEncoding = reqs.TransferEncoding
-	req.Close = reqs.Close
-	req.Trailer = reqs.Trailer
-
-	for k, v := range reqs.Header {
-		req.Header[k] = v
-	}
-
-	if len(reqs.QueryParams) > 0 {
-		if req.URL.RawQuery != "" {
-			existingValues := req.URL.Query()
-
-			for key, value := range reqs.QueryParams {
-				for _, v := range value {
-					existingValues.Add(key, v)
-				}
-			}
-			req.URL.RawQuery = existingValues.Encode()
-		} else {
-			req.URL.RawQuery = reqs.QueryParams.Encode()
+	for key, value := range r.QueryParams {
+		for _, v := range value {
+			existingValues.Add(key, v)
 		}
 	}
 
-	return req.WithContext(ctx), nil
+	return existingValues.Encode()
 }
 
 // getRequestBody returns the io.Reader which should be used as the body of new Requester
@@ -206,7 +199,7 @@ func (r *Requester) getRequestBody() (body io.Reader, contentType string, _ erro
 		b, ct, err := marshaler.Marshal(r.Body)
 
 		if err != nil {
-			return nil, "", merry.Prepend(err, "marshaling body")
+			return nil, "", fmt.Errorf("error marshaling body: %w", err)
 		}
 
 		return bytes.NewReader(b), ct, nil
@@ -227,7 +220,7 @@ func (r *Requester) withOpts(opts ...Option) (*Requester, error) {
 	return r, nil
 }
 
-// SendContext does the same as Request, but requires a context
+// SendContext does the same as Send, but requires a context
 func (r *Requester) SendContext(ctx context.Context, opts ...Option) (*http.Response, error) {
 	reqs, err := r.withOpts(opts...)
 	if err != nil {
@@ -251,7 +244,7 @@ func (r *Requester) Do(req *http.Request) (*http.Response, error) {
 
 	resp, err := Wrap(doer, r.Middleware...).Do(req)
 
-	return resp, merry.Wrap(err)
+	return resp, err
 }
 
 // Receive creates a new HTTP request and returns the response
@@ -291,7 +284,7 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 			unmarshaler = DefaultUnmarshaler
 		}
 
-		err = unmarshaler.Unmarshal(body, resp.Header.Get("Content-Type"), into)
+		err = unmarshaler.Unmarshal(body, resp.Header.Get(HeaderContentType), into)
 	}
 
 	return resp, body, err
@@ -304,7 +297,7 @@ func readBody(resp *http.Response) ([]byte, error) {
 
 	defer resp.Body.Close()
 
-	cls := resp.Header.Get("Content-Length")
+	cls := resp.Header.Get(HeaderContentLength)
 
 	var cl int64
 
@@ -318,7 +311,7 @@ func readBody(resp *http.Response) ([]byte, error) {
 	}
 
 	if _, err := buf.ReadFrom(resp.Body); err != nil {
-		return nil, merry.Prepend(err, "reading response body")
+		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	return buf.Bytes(), nil

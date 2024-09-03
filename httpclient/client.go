@@ -2,11 +2,10 @@ package httpclient
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/ansel1/merry"
 )
 
 // New builds a new *http.Client
@@ -71,7 +70,7 @@ func (f TransportOption) Apply(c *http.Client) error {
 	case *http.Transport:
 		transport = t
 	default:
-		return merry.Errorf("client.Transport is not a *http.Transport.  It's a %T", c.Transport)
+		return fmt.Errorf("%w: transport is of type %T not *http.Transport", ErrInvalidTransportType, c.Transport)
 	}
 
 	return f(transport)

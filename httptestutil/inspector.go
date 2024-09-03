@@ -94,6 +94,7 @@ func (b *Inspector) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ex := Exchange{}
 		ex.Request = r
+
 		if r.Body != nil && r.Body != http.NoBody {
 			ex.RequestBody = &bytes.Buffer{}
 			if _, err := ex.RequestBody.ReadFrom(r.Body); err != nil {

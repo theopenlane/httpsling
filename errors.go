@@ -27,6 +27,6 @@ var (
 	ErrResponseNil = errors.New("response is nil")
 	// ErrFailedToCloseResponseBody is returned when the response body cannot be closed
 	ErrFailedToCloseResponseBody = errors.New("failed to close response body")
-	// ErrMapper
-	ErrMapper = "%w: %v"
+	// ErrUnsuccessfulResponse is returned when the response is unsuccessful
+	ErrUnsuccessfulResponse = errors.New("unsuccessful response")
 )

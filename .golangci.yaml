@@ -38,5 +38,6 @@ issues:
   fix: true
   exclude-use-default: true
   exclude-dirs:
-    - totp/testing/*
-  exclude-files: []
+    - httptestutil/*
+  exclude-files: 
+    - example_test.go

@@ -22,22 +22,23 @@ func TestJSONMarshaler_Marshal(t *testing.T) {
 	expectedIndented, err := json.MarshalIndent(v, "", "  ")
 	require.NoError(t, err)
 
-	d, ct, err := m.Marshal(v)
+	data, contentType, err := m.Marshal(v)
 	require.NoError(t, err)
-	require.Equal(t, "application/json; charset=UTF-8", ct)
-	require.Equal(t, expected, d)
+	require.Equal(t, "application/json;charset=utf-8", contentType)
+	require.Equal(t, expected, data)
 
 	m.Indent = true
-	d, _, err = m.Marshal(v)
+	data, _, err = m.Marshal(v)
 	require.NoError(t, err)
-	require.Equal(t, expectedIndented, d)
+	require.Equal(t, expectedIndented, data)
 }
 
 func TestJSONMarshaler_Unmarshal(t *testing.T) {
 	m := JSONMarshaler{}
+	d := []byte(`{"color":"red"}`)
 
 	var v interface{}
-	d := []byte(`{"color":"red"}`)
+
 	err := m.Unmarshal(d, "", &v)
 	require.NoError(t, err)
 
@@ -55,7 +56,7 @@ func TestXMLMarshaler_Marshal(t *testing.T) {
 	b, ct, err := m.Marshal(testModel{"red", 30})
 	require.NoError(t, err)
 
-	assert.Equal(t, "application/xml; charset=UTF-8", ct)
+	assert.Equal(t, "application/xml;charset=utf-8", ct)
 
 	assert.Equal(t, `<testModel><color>red</color><count>30</count></testModel>`, string(b))
 
@@ -72,8 +73,10 @@ func TestXMLMarshaler_Marshal(t *testing.T) {
 func TestXMLMarshaler_Unmarshal(t *testing.T) {
 	m := XMLMarshaler{}
 
-	var v testModel
 	data := []byte(`<testModel><color>red</color><count>30</count></testModel>`)
+
+	var v testModel
+
 	err := m.Unmarshal(data, "", &v)
 	require.NoError(t, err)
 
@@ -99,8 +102,10 @@ func TestMultiUnmarshaler_Unmarshal(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.contentType, func(t *testing.T) {
 			var v testModel
+
 			err := m.Unmarshal([]byte(c.input), c.contentType, &v)
 			require.NoError(t, err)
+
 			require.Equal(t, testModel{"red", 30}, v)
 		})
 	}
@@ -149,9 +154,11 @@ func TestContentTypeUnmarshaler_Unmarshal(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.contentType, func(t *testing.T) {
 			var v testModel
+
 			err := m.Unmarshal([]byte(c.input), c.contentType, &v)
 			require.NoError(t, err)
-			require.Equal(t, testModel{"red", 30}, v)
+
+			assert.Equal(t, testModel{"red", 30}, v)
 		})
 	}
 
@@ -200,11 +207,12 @@ func TestFormMarshaler_Marshal(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		m := FormMarshaler{}
-		d, ct, err := m.Marshal(testCase.input)
 
+		data, contentType, err := m.Marshal(testCase.input)
 		require.NoError(t, err)
-		assert.Equal(t, "application/x-www-form-urlencoded; charset=UTF-8", ct)
-		assert.Equal(t, testCase.output, string(d))
+
+		assert.Equal(t, "application/x-www-form-urlencoded", contentType)
+		assert.Equal(t, testCase.output, string(data))
 	}
 }
 

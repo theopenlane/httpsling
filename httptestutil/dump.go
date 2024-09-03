@@ -12,7 +12,9 @@ import (
 	"github.com/felixge/httpsnoop"
 )
 
-// DumpTo wraps an http.Handler in a new handler; \the new handler dumps requests and responses to a writer, using the httputil.DumpRequest and httputil.DumpResponse functions
+// DumpTo wraps an http.Handler in a new handler
+// the new handler dumps requests and responses to a writer, using the httputil.DumpRequest and
+// httputil.DumpResponse functions
 func DumpTo(handler http.Handler, writer io.Writer) http.Handler {
 	// use the same default as http.Server
 	if handler == nil {
@@ -45,9 +47,9 @@ func DumpTo(handler http.Handler, writer io.Writer) http.Handler {
 
 		d, err := httputil.DumpResponse(&resp, true)
 		if err != nil {
-			_, _ = fmt.Fprintf(writer, "error dumping response: %#v", err)
+			fmt.Fprintf(writer, "error dumping response: %#v", err) // nolint: errcheck
 		} else {
-			_, _ = writer.Write(append(d, []byte("\r\n")...))
+			writer.Write(append(d, []byte("\r\n")...)) // nolint: errcheck
 		}
 	})
 }

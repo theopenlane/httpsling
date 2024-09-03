@@ -2,12 +2,12 @@ package httpsling
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"unicode"
 
-	"github.com/ansel1/merry"
 	goquery "github.com/google/go-querystring/query"
 
 	"github.com/theopenlane/httpsling/httpclient"
@@ -40,19 +40,19 @@ func (r *Requester) With(opts ...Option) (*Requester, error) {
 
 // MustWith clones the Requester, then applies the options to the clone
 func (r *Requester) MustWith(opts ...Option) *Requester {
-	if r2, err := r.With(opts...); err != nil {
+	requester, err := r.With(opts...)
+	if err != nil {
 		panic(err)
-	} else {
-		return r2
 	}
+
+	return requester
 }
 
 // Apply applies the options to the receiver
 func (r *Requester) Apply(opts ...Option) error {
 	for _, o := range opts {
-		err := o.Apply(r)
-		if err != nil {
-			return merry.Prepend(err, "applying options")
+		if err := o.Apply(r); err != nil {
+			return fmt.Errorf("error applying options: %w", err)
 		}
 	}
 
@@ -70,14 +70,12 @@ func (r *Requester) MustApply(opts ...Option) {
 func Method(m string, paths ...string) Option {
 	return OptionFunc(func(r *Requester) error {
 		r.Method = m
-		if len(paths) > 0 {
-			err := RelativeURL(paths...).Apply(r)
-			if err != nil {
-				return err
-			}
+
+		if len(paths) == 0 {
+			return nil
 		}
 
-		return nil
+		return RelativeURL(paths...).Apply(r)
 	})
 }
 
@@ -176,7 +174,7 @@ func URL(rawurl string) Option {
 	return OptionFunc(func(b *Requester) error {
 		u, err := url.Parse(rawurl)
 		if err != nil {
-			return merry.Prepend(err, "invalid url")
+			return fmt.Errorf("invalid url: %w", err)
 		}
 
 		b.URL = u
@@ -191,7 +189,7 @@ func RelativeURL(paths ...string) Option {
 		for _, p := range paths {
 			u, err := url.Parse(p)
 			if err != nil {
-				return merry.Prepend(err, "invalid url")
+				return fmt.Errorf("invalid url: %w", err)
 			}
 
 			if r.URL == nil {
@@ -240,6 +238,7 @@ func AppendPath(elements ...string) Option {
 		if trailingSlash {
 			newPath += "/"
 		}
+
 		return RelativeURL(newPath).Apply(r)
 	})
 }
@@ -271,7 +270,7 @@ func QueryParams(queryStructs ...interface{}) Option {
 
 				values, err = goquery.Values(queryStruct)
 				if err != nil {
-					return merry.Prepend(err, "invalid query struct")
+					return fmt.Errorf("invalid query struct: %w", err)
 				}
 			}
 
@@ -307,6 +306,7 @@ func QueryParam(k, v string) Option {
 func Body(body interface{}) Option {
 	return OptionFunc(func(b *Requester) error {
 		b.Body = body
+
 		return nil
 	})
 }
@@ -315,6 +315,7 @@ func Body(body interface{}) Option {
 func WithMarshaler(m Marshaler) Option {
 	return OptionFunc(func(b *Requester) error {
 		b.Marshaler = m
+
 		return nil
 	})
 }
@@ -323,6 +324,7 @@ func WithMarshaler(m Marshaler) Option {
 func WithUnmarshaler(m Unmarshaler) Option {
 	return OptionFunc(func(b *Requester) error {
 		b.Unmarshaler = m
+
 		return nil
 	})
 }
@@ -404,6 +406,7 @@ func Client(opts ...httpclient.Option) Option {
 func Use(m ...Middleware) Option {
 	return OptionFunc(func(r *Requester) error {
 		r.Middleware = append(r.Middleware, m...)
+
 		return nil
 	})
 }
@@ -412,6 +415,7 @@ func Use(m ...Middleware) Option {
 func WithDoer(d Doer) Option {
 	return OptionFunc(func(r *Requester) error {
 		r.Doer = d
+
 		return nil
 	})
 }

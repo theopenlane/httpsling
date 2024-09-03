@@ -6,8 +6,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"time"
-
-	"github.com/ansel1/merry"
 )
 
 // NoRedirects configures the client to no perform any redirects
@@ -21,12 +19,12 @@ func NoRedirects() Option {
 	})
 }
 
-// MaxRedirects configures the max number of redirects the client will perform beforegiving up
+// MaxRedirects configures the max number of redirects the client will perform before giving up
 func MaxRedirects(max int) Option {
 	return OptionFunc(func(client *http.Client) error {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			if len(via) >= max {
-				return merry.Errorf("stopped after max %d requests", len(via))
+				return ErrMaxAttemptsExceeded
 			}
 
 			return nil
@@ -41,7 +39,7 @@ func CookieJar(opts *cookiejar.Options) Option {
 	return OptionFunc(func(client *http.Client) error {
 		jar, err := cookiejar.New(opts)
 		if err != nil {
-			return merry.Wrap(err)
+			return err
 		}
 
 		client.Jar = jar
@@ -55,7 +53,7 @@ func ProxyURL(proxyURL string) Option {
 	return TransportOption(func(t *http.Transport) error {
 		u, err := url.Parse(proxyURL)
 		if err != nil {
-			return merry.Wrap(err)
+			return err
 		}
 
 		t.Proxy = func(request *http.Request) (*url.URL, error) {

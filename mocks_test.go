@@ -24,22 +24,26 @@ func TestMockHandler(t *testing.T) {
 	resp, body, err := Receive(Get(ts.URL))
 	require.NoError(t, err)
 
+	defer resp.Body.Close()
+
 	assert.Equal(t, 201, resp.StatusCode)
 	assert.JSONEq(t, `{"color":"blue"}`, string(body))
 	assert.Contains(t, resp.Header.Get(HeaderContentType), ContentTypeJSON)
 }
 
 func TestChannelHandler(t *testing.T) {
-	in, h := ChannelHandler()
+	in, h := ChannelHandler() // nolint: bodyclose
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	in <- MockResponse(201, JSON(false),
+	in <- MockResponse(201, JSON(false), // nolint: bodyclose
 		Body(map[string]interface{}{"color": "blue"}))
 
 	resp, body, err := Receive(Get(ts.URL))
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	assert.Equal(t, 201, resp.StatusCode)
 	assert.JSONEq(t, `{"color":"blue"}`, string(body))
@@ -52,6 +56,8 @@ func TestMockResponse(t *testing.T) {
 		Body(map[string]interface{}{"color": "red"}),
 	)
 
+	defer resp.Body.Close()
+
 	require.NotNil(t, resp)
 	assert.Equal(t, 201, resp.StatusCode)
 	assert.Contains(t, resp.Header.Get(HeaderContentType), ContentTypeJSON)
@@ -61,6 +67,8 @@ func TestMockResponse(t *testing.T) {
 
 	resp = MockResponse(500)
 	assert.NotNil(t, resp.Body)
+
+	defer resp.Body.Close()
 }
 
 func TestMockDoer(t *testing.T) {
@@ -75,6 +83,8 @@ func TestMockDoer(t *testing.T) {
 	resp, err := d.Do(req)
 	require.NoError(t, err)
 
+	defer resp.Body.Close()
+
 	require.NotNil(t, resp)
 
 	assert.Equal(t, req, resp.Request)
@@ -87,9 +97,9 @@ func TestMockDoer(t *testing.T) {
 }
 
 func TestChannelDoer(t *testing.T) {
-	in, d := ChannelDoer()
+	in, d := ChannelDoer() // nolint: bodyclose
 
-	in <- MockResponse(201,
+	in <- MockResponse(201, // nolint: bodyclose
 		JSON(false),
 		Body(map[string]interface{}{"color": "blue"}),
 	)
@@ -99,6 +109,8 @@ func TestChannelDoer(t *testing.T) {
 
 	resp, err := d.Do(req)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	require.NotNil(t, resp)
 
@@ -120,6 +132,7 @@ func ExampleMockDoer() {
 	// Since DoerFunc is an Option, it can be passed directly to functions
 	// which accept Options.
 	resp, body, _ := Receive(d)
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(resp.Header.Get(HeaderContentType))
@@ -127,7 +140,7 @@ func ExampleMockDoer() {
 
 	// Output:
 	// 201
-	// application/json
+	// application/json;charset=utf-8
 	// {"color":"blue"}
 }
 
@@ -142,18 +155,20 @@ func ExampleMockHandler() {
 
 	resp, body, _ := Receive(URL(ts.URL))
 
+	defer resp.Body.Close()
+
 	fmt.Println(resp.StatusCode)
 	fmt.Println(resp.Header.Get(HeaderContentType))
 	fmt.Println(string(body))
 
 	// Output:
 	// 201
-	// application/json
+	// application/json;charset=utf-8
 	// {"color":"blue"}
 }
 
 func ExampleChannelDoer() {
-	in, d := ChannelDoer()
+	in, d := ChannelDoer() // nolint: bodyclose
 
 	in <- &http.Response{
 		StatusCode: 201,
@@ -161,6 +176,8 @@ func ExampleChannelDoer() {
 	}
 
 	resp, body, _ := Receive(d)
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(string(body))
@@ -171,7 +188,7 @@ func ExampleChannelDoer() {
 }
 
 func ExampleChannelHandler() {
-	in, h := ChannelHandler()
+	in, h := ChannelHandler() // nolint: bodyclose
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
@@ -182,6 +199,8 @@ func ExampleChannelHandler() {
 	}
 
 	resp, body, _ := Receive(URL(ts.URL))
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(string(body))

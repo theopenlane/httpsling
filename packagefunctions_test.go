@@ -27,6 +27,7 @@ func TestRequestContext(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, req)
+
 	assert.Equal(t, "http://blue.com/red", req.URL.String())
 	assert.Equal(t, "green", req.Context().Value(colorContextKey))
 }
@@ -36,6 +37,8 @@ func TestSend(t *testing.T) {
 
 	resp, err := Send(Get("/red"), WithDoer(MockDoer(204)), &i)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	assert.Equal(t, 204, resp.StatusCode)
 	assert.Equal(t, "/red", i.Request.URL.Path)
@@ -50,8 +53,10 @@ func TestSendContext(t *testing.T) {
 		WithDoer(MockDoer(204)),
 		&i,
 	)
-
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, 204, resp.StatusCode)
 	assert.Equal(t, "blue", i.Request.Context().Value(colorContextKey))
 	assert.Equal(t, "/profile", i.Request.URL.Path)
@@ -65,6 +70,8 @@ func TestReceive(t *testing.T) {
 	var m testModel
 	resp, body, err := Receive(&m, Get("/red"), WithDoer(doer), &i)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	assert.Equal(t, `{"count":25}`, string(body))
 	assert.Equal(t, 205, resp.StatusCode)
@@ -85,6 +92,8 @@ func TestReceive(t *testing.T) {
 		)
 		require.NoError(t, err)
 
+		defer resp.Body.Close()
+
 		assert.Equal(t, `{"count":25}`, string(body))
 		assert.Equal(t, 205, resp.StatusCode)
 		assert.Equal(t, 25, m.Count)
@@ -95,6 +104,11 @@ func TestReceive(t *testing.T) {
 
 func ExampleReceive() {
 	resp, body, err := Receive(Get("http://api.com/resource"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode, string(body), err)
 }
@@ -107,12 +121,22 @@ func ExampleReceive_unmarshal() {
 	var r Resource
 
 	resp, body, err := Receive(&r, Get("http://api.com/resource"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode, string(body), err)
 }
 
 func ExampleSend() {
 	resp, err := Send(Get("http://api.com/resource"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode, err)
 }

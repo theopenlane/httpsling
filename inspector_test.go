@@ -74,10 +74,12 @@ func TestInspect(t *testing.T) {
 
 	i := Inspect(r)
 
-	_, _, err := r.Receive(MockDoer(201))
+	resp, _, err := r.Receive(MockDoer(201))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	assert.NotNil(t, i.Request)
 	assert.Equal(t, 201, i.Response.StatusCode)
@@ -92,11 +94,13 @@ func ExampleInspect() {
 
 	i := Inspect(r)
 
-	_, _, err := r.Receive(nil)
+	resp, _, err := r.Receive(nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	defer resp.Body.Close()
 
 	fmt.Println(i.Request.Header.Get(HeaderAccept))
 	fmt.Println(i.RequestBody.String())

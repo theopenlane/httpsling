@@ -871,6 +871,6 @@ This library was inspired by and built upon the work of several other HTTP clien
 - [Dghubble/sling](https://github.com/dghubble/sling)
 - [Monaco-io/request](https://github.com/monaco-io/request)
 - [Go-resty/resty](https://github.com/go-resty/resty)
-- [Fiber SlingClient](https://github.com/gofiber/fiber)
+- [Fiber Client](https://github.com/gofiber/fiber)
 
 Props to dghubble for a great name with `sling`, which was totally ripped off to make `httpsling` <3. I chose not to use any of these directly because I wanted to have layers of control we may need within our services echosystem.

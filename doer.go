@@ -21,3 +21,13 @@ func (f DoerFunc) Apply(r *Requester) error {
 func (f DoerFunc) Do(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
+
+// // Client returns a Doer that uses the given http.Client
+// func (f DoerFunc) Client() *http.Client {
+// 	var client *http.Client
+
+// 	client = f.(*http.Client)
+
+// 	return client
+
+// }

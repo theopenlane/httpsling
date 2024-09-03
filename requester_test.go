@@ -15,8 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ansel1/merry"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,13 +37,16 @@ func TestNew(t *testing.T) {
 	reqs, err := New(URL("green"), Method("POST"))
 	require.NoError(t, err)
 	require.NotNil(t, reqs)
+
 	// options were applied
 	require.Equal(t, "green", reqs.URL.String())
 	require.Equal(t, "POST", reqs.Method)
 
 	t.Run("error", func(t *testing.T) {
 		_, err := New(failOption())
-		require.EqualError(t, merry.Unwrap(err), "boom")
+		require.Error(t, err)
+
+		require.ErrorContains(t, err, "boom")
 	})
 }
 
@@ -165,6 +166,7 @@ func TestRequester_Request_QueryParams(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
+
 			req, _ := reqs.RequestContext(context.Background())
 			require.Equal(t, c.expectedURL, req.URL.String())
 		})
@@ -178,14 +180,14 @@ func TestRequester_Request_Body(t *testing.T) {
 		expectedContentType string
 	}{
 		// Body (json)
-		{[]Option{Body(modelA)}, `{"text":"note","favorite_count":12}`, ContentTypeJSON + "; charset=UTF-8"},
-		{[]Option{Body(&modelA)}, `{"text":"note","favorite_count":12}`, ContentTypeJSON + "; charset=UTF-8"},
-		{[]Option{Body(&FakeModel{})}, `{}`, ContentTypeJSON + "; charset=UTF-8"},
-		{[]Option{Body(FakeModel{})}, `{}`, ContentTypeJSON + "; charset=UTF-8"},
+		{[]Option{Body(modelA)}, `{"text":"note","favorite_count":12}`, ContentTypeJSON + ";charset=utf-8"},
+		{[]Option{Body(&modelA)}, `{"text":"note","favorite_count":12}`, ContentTypeJSON + ";charset=utf-8"},
+		{[]Option{Body(&FakeModel{})}, `{}`, ContentTypeJSON + ";charset=utf-8"},
+		{[]Option{Body(FakeModel{})}, `{}`, ContentTypeJSON + ";charset=utf-8"},
 		// BodyForm
-		{[]Option{Form(), Body(paramsA)}, "limit=30", ContentTypeForm + "; charset=UTF-8"},
-		{[]Option{Form(), Body(paramsB)}, "count=25&kind_name=recent", ContentTypeForm + "; charset=UTF-8"},
-		{[]Option{Form(), Body(&paramsB)}, "count=25&kind_name=recent", ContentTypeForm + "; charset=UTF-8"},
+		{[]Option{Form(), Body(paramsA)}, "limit=30", ContentTypeForm},
+		{[]Option{Form(), Body(paramsB)}, "count=25&kind_name=recent", ContentTypeForm},
+		{[]Option{Form(), Body(&paramsB)}, "count=25&kind_name=recent", ContentTypeForm},
 		// Raw bodies, skips marshaler
 		{[]Option{Body(strings.NewReader("this-is-a-test"))}, "this-is-a-test", ""},
 		{[]Option{Body("this-is-a-test")}, "this-is-a-test", ""},
@@ -202,8 +204,8 @@ func TestRequester_Request_Body(t *testing.T) {
 
 			if reqs.Body != nil {
 				buf := new(bytes.Buffer)
-				_, err := buf.ReadFrom(req.Body)
-				if err != nil {
+
+				if _, err := buf.ReadFrom(req.Body); err != nil {
 					t.Errorf("failed to read body: %v", err)
 				}
 
@@ -219,7 +221,8 @@ func TestRequester_Request_Body(t *testing.T) {
 
 func TestRequester_Request_Marshaler(t *testing.T) {
 	var capturedV interface{}
-	reqs := Requester{
+
+	requester := Requester{
 		Body: []string{"blue"},
 		Marshaler: MarshalFunc(func(v interface{}) ([]byte, string, error) {
 			capturedV = v
@@ -227,21 +230,23 @@ func TestRequester_Request_Marshaler(t *testing.T) {
 		}),
 	}
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := requester.RequestContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, []string{"blue"}, capturedV)
+
 	by, err := io.ReadAll(req.Body)
 	require.NoError(t, err)
+
 	require.Equal(t, "red", string(by))
 	require.Equal(t, "orange", req.Header.Get("Content-Type"))
 
 	t.Run("errors", func(t *testing.T) {
-		reqs.Marshaler = MarshalFunc(func(v interface{}) ([]byte, string, error) {
+		requester.Marshaler = MarshalFunc(func(v interface{}) ([]byte, string, error) {
 			return nil, "", errors.New("boom") // nolint: err113
 		})
 
-		_, err := reqs.RequestContext(context.Background())
+		_, err := requester.RequestContext(context.Background())
 		require.Error(t, err, "boom")
 	})
 }
@@ -249,132 +254,170 @@ func TestRequester_Request_Marshaler(t *testing.T) {
 func TestRequester_Request_ContentLength(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// content length should be set automatically
 	require.EqualValues(t, 4, req.ContentLength)
 
 	// I should be able to override it
 	reqs.ContentLength = 10
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.EqualValues(t, 10, req.ContentLength)
 }
 
 func TestRequester_Request_GetBody(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// GetBody should be populated automatically
 	rdr, err := req.GetBody()
 	require.NoError(t, err)
+
 	bts, err := io.ReadAll(rdr)
 	require.NoError(t, err)
+
 	require.Equal(t, "1234", string(bts))
 
 	// I should be able to override it
 	reqs.GetBody = func() (io.ReadCloser, error) {
 		return io.NopCloser(strings.NewReader("5678")), nil
 	}
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	rdr, err = req.GetBody()
 	require.NoError(t, err)
+
 	bts, err = io.ReadAll(rdr)
 	require.NoError(t, err)
+
 	require.Equal(t, "5678", string(bts))
 }
 
 func TestRequester_Request_Host(t *testing.T) {
 	reqs, err := New(URL("http://test.com/red"))
 	require.NoError(t, err)
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// Host should be set automatically
 	require.Equal(t, "test.com", req.Host)
 
 	// but I can override it
 	reqs.Host = "test2.com"
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.Equal(t, "test2.com", req.Host)
 }
 
 func TestRequester_Request_TransferEncoding(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// should be empty by default
 	require.Nil(t, req.TransferEncoding)
 
 	// but I can set it
 	reqs.TransferEncoding = []string{"red"}
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.Equal(t, reqs.TransferEncoding, req.TransferEncoding)
 }
 
 func TestRequester_Request_Close(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// should be false by default
 	require.False(t, req.Close)
 
 	// but I can set it
 	reqs.Close = true
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.True(t, req.Close)
 }
 
 func TestRequester_Request_Trailer(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// should be empty by default
 	require.Nil(t, req.Trailer)
 
 	// but I can set it
 	reqs.Trailer = http.Header{"color": []string{"red"}}
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.Equal(t, reqs.Trailer, req.Trailer)
 }
 
 func TestRequester_Request_Header(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	// should be empty by default
 	require.Empty(t, req.Header)
 
 	// but I can set it
 	reqs.Header = http.Header{"color": []string{"red"}}
+
 	req, err = reqs.RequestContext(context.Background())
 	require.NoError(t, err)
+
 	require.Equal(t, reqs.Header, req.Header)
 }
 
 func TestRequester_Request_Context(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.RequestContext(context.WithValue(context.Background(), colorContextKey, "red"))
 	require.NoError(t, err)
+
 	require.Equal(t, "red", req.Context().Value(colorContextKey))
 }
 
 func TestRequester_Request(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.Request()
 	require.NoError(t, err)
+
 	require.NotNil(t, req)
 }
 
 func TestRequester_Request_options(t *testing.T) {
 	reqs := Requester{}
+
 	req, err := reqs.Request(Get("http://test.com/blue"))
 	require.NoError(t, err)
+
 	assert.Equal(t, "http://test.com/blue", req.URL.String())
 }
 
@@ -392,6 +435,7 @@ func TestRequester_SendContext(t *testing.T) {
 		Post("/server"),
 	)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	require.NotNil(t, resp)
@@ -402,6 +446,7 @@ func TestRequester_SendContext(t *testing.T) {
 	t.Run("Send", func(t *testing.T) {
 		resp, err := r.Send(Get("/server"))
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		assert.Equal(t, 204, resp.StatusCode)
@@ -410,13 +455,13 @@ func TestRequester_SendContext(t *testing.T) {
 
 func TestRequester_Receive_withopts(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write([]byte("blue"))
+		writer.Write([]byte("blue")) // nolint: errcheck
 	}))
 	defer ts.Close()
 
 	var called bool
 
-	_, _, err := MustNew(
+	resp, _, err := MustNew(
 		Get(ts.URL, "/profile"),
 		UnmarshalFunc(func(data []byte, contentType string, v interface{}) error {
 			called = true
@@ -424,6 +469,8 @@ func TestRequester_Receive_withopts(t *testing.T) {
 		}),
 	).Receive(&testModel{})
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	assert.True(t, called)
 }
@@ -437,13 +484,13 @@ func TestRequester_ReceiveContext(t *testing.T) {
 	mux.HandleFunc("/model.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(206)
-		w.Write([]byte(`{"color":"green","count":25}`))
+		w.Write([]byte(`{"color":"green","count":25}`)) // nolint: errcheck
 	})
 
 	mux.HandleFunc("/err", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		w.Write([]byte(`{"color":"red","count":30}`))
+		w.Write([]byte(`{"color":"red","count":30}`)) // nolint: errcheck
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -464,6 +511,9 @@ func TestRequester_ReceiveContext(t *testing.T) {
 					&i,
 				)
 				require.NoError(t, err)
+
+				defer resp.Body.Close()
+
 				assert.Equal(t, 206, resp.StatusCode)
 				assert.Equal(t, `{"color":"green","count":25}`, string(body))
 				assert.Equal(t, "purple", i.Request.Context().Value(colorContextKey), "context should be passed through")
@@ -486,6 +536,9 @@ func TestRequester_ReceiveContext(t *testing.T) {
 			Get("/err"),
 		)
 		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
 		assert.Equal(t, 500, resp.StatusCode)
 		assert.Equal(t, `{"color":"red","count":30}`, string(body))
 		assert.Equal(t, urlBefore, r.URL.String(), "the Get option should only affect the single request, it should not leak back into the Requester object")
@@ -494,8 +547,12 @@ func TestRequester_ReceiveContext(t *testing.T) {
 	// convenience functions which just wrap ReceiveContext
 	t.Run("Receive", func(t *testing.T) {
 		var m testModel
+
 		resp, body, err := MustNew(Get(ts.URL, "/model.json")).Receive(&m)
 		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
 		assert.Equal(t, 206, resp.StatusCode)
 		assert.Equal(t, `{"color":"green","count":25}`, string(body))
 		assert.Equal(t, "green", m.Color)
@@ -509,16 +566,28 @@ func TestRequester_ReceiveContext(t *testing.T) {
 		r := MustNew(Get(ts.URL, "/model.json"))
 
 		// Receive will Options to be passed as the "into" arguments
-		resp, _, _ := r.Receive(Get("/blue"))
+		resp, _, err := r.Receive(Get("/blue"))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
 		assert.Equal(t, 208, resp.StatusCode)
 
 		// Options should be applied in the order of the arguments
-		resp, _, _ = r.Receive(Get("/red"), Get("/blue"))
+		resp, _, err = r.Receive(Get("/red"), Get("/blue"))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
 		assert.Equal(t, 208, resp.StatusCode)
 
 		// variants
 		ctx := context.Background()
-		resp, _, _ = r.ReceiveContext(ctx, Get("/blue"))
+		resp, _, err = r.ReceiveContext(ctx, Get("/blue"))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
 		assert.Equal(t, 208, resp.StatusCode)
 	})
 }
@@ -565,23 +634,32 @@ func BenchmarkRequester_Receive(b *testing.B) {
 
 	// smoke test
 	var ts TestStruct
-	_, s, err := Receive(&ts, mockServer, JSON(false), Get("/test"))
 
+	resp, s, err := Receive(&ts, mockServer, JSON(false), Get("/test"))
 	require.NoError(b, err)
+
+	defer resp.Body.Close()
+
 	require.JSONEq(b, inputJSON, string(s))
 	require.Equal(b, TestStruct{Color: "blue", Count: 10, Flavor: "vanilla", Important: true}, ts)
 
 	b.Run("simple", func(b *testing.B) {
 		b.Run("requester", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				Receive(&TestStruct{}, mockServer, Get("/test"))
+				resp, _, err := Receive(&TestStruct{}, mockServer, Get("/test"))
+				require.NoError(b, err)
+
+				resp.Body.Close()
 			}
 		})
 
 		b.Run("base", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				req := httptest.NewRequest("GET", "/test", nil)
-				resp, _ := mockServer.Do(req)
+
+				resp, err := mockServer.Do(req)
+				require.NoError(b, err)
+
 				body, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
 
@@ -595,7 +673,7 @@ func BenchmarkRequester_Receive(b *testing.B) {
 	b.Run("complex", func(b *testing.B) {
 		b.Run("requester", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				Receive(&ts,
+				resp, _, err := Receive(&ts,
 					mockServer,
 					Get("/test/blue/green"),
 					JSON(false),
@@ -605,6 +683,9 @@ func BenchmarkRequester_Receive(b *testing.B) {
 					QueryParam("q", "user=sam"),
 					Body(&ts),
 				)
+				require.NoError(b, err)
+
+				resp.Body.Close()
 			}
 		})
 
@@ -621,10 +702,10 @@ func BenchmarkRequester_Receive(b *testing.B) {
 				r.Header.Add("X-Under", "Over")
 				r.Header.Add("X-Over", "Under")
 
-				_, _, err := r.Receive(&ts)
-				if err != nil {
-					b.Fatal(err)
-				}
+				resp, _, err := r.Receive(&ts)
+				require.NoError(b, err)
+
+				resp.Body.Close()
 			}
 		})
 
@@ -640,13 +721,17 @@ func BenchmarkRequester_Receive(b *testing.B) {
 				req.Header.Set("X-Under", "Over")
 				req.Header.Set("X-Over", "Under")
 				req.Header.Set("Content-Type", "application/json")
-				resp, _ := mockServer.Do(req)
-				body, _ := io.ReadAll(resp.Body)
-				resp.Body.Close()
 
-				if err := json.Unmarshal(body, &TestStruct{}); err != nil {
-					b.Fatal(err)
-				}
+				resp, err := mockServer.Do(req)
+				require.NoError(b, err)
+
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(b, err)
+
+				err = json.Unmarshal(body, &TestStruct{})
+				require.NoError(b, err)
 			}
 		})
 	})
@@ -658,6 +743,8 @@ func ExampleRequester_Receive() {
 	))
 
 	resp, body, _ := r.Receive(Get("http://api.com/resource"))
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode, string(body))
 }
@@ -675,6 +762,8 @@ func ExampleRequester_Receive_unmarshal() {
 	var resource Resource
 
 	resp, body, _ := r.Receive(&resource, Get("http://api.com/resource"))
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(string(body))
@@ -697,8 +786,8 @@ func ExampleRequester_Request() {
 	fmt.Println(HeaderContentType+":", req.Header.Get(HeaderContentType))
 	fmt.Println(HeaderAccept+":", req.Header.Get(HeaderAccept))
 	fmt.Println("X-Color:", req.Header.Get("X-Color"))
-	_, err := io.Copy(os.Stdout, req.Body)
-	if err != nil {
+
+	if _, err := io.Copy(os.Stdout, req.Body); err != nil {
 		fmt.Println(err)
 	}
 }
@@ -707,6 +796,8 @@ func ExampleRequester_Send() {
 	r := MustNew(MockDoer(204))
 
 	resp, _ := r.Send(Get("resources/1"))
+
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 }

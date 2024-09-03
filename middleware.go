@@ -2,12 +2,13 @@ package httpsling
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"os"
 
-	"github.com/ansel1/merry"
+	"github.com/theopenlane/utils/rout"
 )
 
 // Middleware can be used to wrap Doers with additional functionality.
@@ -26,6 +27,7 @@ func Wrap(d Doer, m ...Middleware) Doer {
 	for i := len(m) - 1; i > -1; i-- {
 		d = m[i](d)
 	}
+
 	return d
 }
 
@@ -35,18 +37,18 @@ func Dump(w io.Writer) Middleware {
 		return DoerFunc(func(req *http.Request) (*http.Response, error) {
 			dump, dumperr := httputil.DumpRequestOut(req, true)
 			if dumperr != nil {
-				_, _ = io.WriteString(w, "Error dumping request: "+dumperr.Error()+"\n")
+				io.WriteString(w, "Error dumping request: "+dumperr.Error()+"\n") // nolint: errcheck
 			} else {
-				_, _ = io.WriteString(w, string(dump)+"\n")
+				io.WriteString(w, string(dump)+"\n") // nolint: errcheck
 			}
 
 			resp, err := next.Do(req)
 			if resp != nil {
 				dump, dumperr = httputil.DumpResponse(resp, true)
 				if dumperr != nil {
-					_, _ = io.WriteString(w, "Error dumping response: "+dumperr.Error()+"\n")
+					io.WriteString(w, "Error dumping response: "+dumperr.Error()+"\n") // nolint: errcheck
 				} else {
-					_, _ = io.WriteString(w, string(dump)+"\n")
+					io.WriteString(w, string(dump)+"\n") // nolint: errcheck
 				}
 			}
 
@@ -93,6 +95,7 @@ func ExpectCode(code int) Middleware {
 			r, c := getCodeChecker(req)
 			c.code = code
 			resp, err := next.Do(r)
+
 			return c.checkCode(resp, err)
 		})
 	}
@@ -108,6 +111,7 @@ func ExpectSuccessCode() Middleware {
 			r, c := getCodeChecker(req)
 			c.code = expectSuccessCode
 			resp, err := next.Do(r)
+
 			return c.checkCode(resp, err)
 		})
 	}
@@ -128,15 +132,21 @@ func (c *codeChecker) checkCode(resp *http.Response, err error) (*http.Response,
 	case err != nil, resp == nil:
 	case c.code == expectSuccessCode:
 		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			err = merry.
-				Errorf("server returned an unsuccessful status code: %d", resp.StatusCode).
-				WithHTTPCode(resp.StatusCode)
+			err = rout.HTTPErrorResponse(
+				fmt.Errorf("%w: server returned unsuccessful status code: %d",
+					ErrUnsuccessfulResponse,
+					resp.StatusCode,
+				))
 		}
 	case c.code != resp.StatusCode:
-		err = merry.
-			Errorf("server returned unexpected status code.  expected: %d, received: %d", c.code, resp.StatusCode).
-			WithHTTPCode(resp.StatusCode)
+		err = rout.HTTPErrorResponse(
+			fmt.Errorf("%w: server returned unexpected status code. expected: %d, received: %d",
+				ErrUnsuccessfulResponse,
+				c.code,
+				resp.StatusCode,
+			))
 	}
+
 	return resp, err
 }
 
@@ -146,5 +156,6 @@ func getCodeChecker(req *http.Request) (*http.Request, *codeChecker) {
 		c = &codeChecker{}
 		req = req.WithContext(context.WithValue(req.Context(), expectCodeCtxKey, c))
 	}
+
 	return req, c
 }

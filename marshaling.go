@@ -3,11 +3,11 @@ package httpsling
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"mime"
 	"net/url"
 	"strings"
 
-	"github.com/ansel1/merry"
 	goquery "github.com/google/go-querystring/query"
 )
 
@@ -60,7 +60,7 @@ type JSONMarshaler struct {
 
 // Unmarshal implements Unmarshaler
 func (m *JSONMarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
-	return merry.Wrap(json.Unmarshal(data, v))
+	return json.Unmarshal(data, v)
 }
 
 // Marshal implements Marshaler
@@ -71,7 +71,7 @@ func (m *JSONMarshaler) Marshal(v interface{}) (data []byte, contentType string,
 		data, err = json.Marshal(v)
 	}
 
-	return data, ContentTypeJSON, merry.Wrap(err)
+	return data, ContentTypeJSONUTF8, err
 }
 
 // Apply implements Option
@@ -88,7 +88,7 @@ type XMLMarshaler struct {
 
 // Unmarshal implements Unmarshaler
 func (*XMLMarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
-	return merry.Wrap(xml.Unmarshal(data, v))
+	return xml.Unmarshal(data, v)
 }
 
 // Marshal implements Marshaler
@@ -99,7 +99,7 @@ func (m *XMLMarshaler) Marshal(v interface{}) (data []byte, contentType string, 
 		data, err = xml.Marshal(v)
 	}
 
-	return data, ContentTypeXML, merry.Wrap(err)
+	return data, ContentTypeXMLUTF8, err
 }
 
 // Apply implements Option
@@ -130,7 +130,7 @@ func (*FormMarshaler) Marshal(v interface{}) (data []byte, contentType string, e
 	default:
 		values, err := goquery.Values(v)
 		if err != nil {
-			return nil, "", merry.Prepend(err, "invalid form struct")
+			return nil, "", fmt.Errorf("invalid form struct: %w", err)
 		}
 
 		return []byte(values.Encode()), ContentTypeForm, nil
@@ -159,23 +159,22 @@ func NewContentTypeUnmarshaler() *ContentTypeUnmarshaler {
 
 func defaultUnmarshalers() map[string]Unmarshaler {
 	return map[string]Unmarshaler{
-		ContentTypeJSON: &JSONMarshaler{},
-		ContentTypeXML:  &XMLMarshaler{},
+		ContentTypeJSONUTF8: &JSONMarshaler{},
+		ContentTypeJSON:     &JSONMarshaler{},
+		ContentTypeXMLUTF8:  &XMLMarshaler{},
+		ContentTypeXML:      &XMLMarshaler{},
 	}
 }
 
 // Unmarshal implements Unmarshaler
 func (c *ContentTypeUnmarshaler) Unmarshal(data []byte, contentType string, v interface{}) error {
 	if c.Unmarshalers == nil {
-		c.Unmarshalers = map[string]Unmarshaler{
-			ContentTypeJSON: &JSONMarshaler{},
-			ContentTypeXML:  &XMLMarshaler{},
-		}
+		c.Unmarshalers = defaultUnmarshalers()
 	}
 
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		return merry.Prependf(err, "failed to parse content type: %s", contentType)
+		return fmt.Errorf(" %w: failed to parse content type: %s", err, contentType)
 	}
 
 	if u := c.Unmarshalers[mediaType]; u != nil {
@@ -188,7 +187,7 @@ func (c *ContentTypeUnmarshaler) Unmarshal(data []byte, contentType string, v in
 		}
 	}
 
-	return merry.Errorf("unsupported content type: %s", contentType)
+	return fmt.Errorf("%w: %s", ErrUnsupportedContentType, contentType)
 }
 
 // Apply implements Option

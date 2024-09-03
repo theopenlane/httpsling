@@ -141,14 +141,17 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 			for i := 0; i < 5; i++ {
 				results[i] = test.backoff.Backoff(i + 1)
 			}
+
 			if test.expectedJitter > 0 {
 				for i, duration := range test.expected {
 					assert.InDelta(t, duration, results[i], float64(duration)*test.backoff.Jitter)
 				}
+
 				assert.NotEqual(t, test.expected, results, "shouldn't be exactly equal, missing the jitter")
 			} else {
 				assert.Equal(t, test.expected, results)
 			}
+
 			if test.backoff.MaxDelay > 0 {
 				for _, duration := range results {
 					assert.LessOrEqual(t, duration, test.backoff.MaxDelay)
@@ -186,11 +189,11 @@ func TestDefaultShouldRetry(t *testing.T) {
 	assert.True(t, DefaultShouldRetry(1, nil, nil, syscall.EPIPE))
 	assert.True(t, DefaultShouldRetry(1, nil, nil, &netError{timeout: true}))
 	assert.False(t, DefaultShouldRetry(1, nil, nil, &netError{}))
-	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(400), nil))
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(500), nil))
-	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(501), nil))
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(502), nil))
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(429), nil))
+	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(400), nil)) // nolint: bodyclose
+	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(500), nil))  // nolint: bodyclose
+	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(501), nil)) // nolint: bodyclose
+	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(502), nil))  // nolint: bodyclose
+	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(429), nil))  // nolint: bodyclose
 }
 
 func TestOnlyIdempotentShouldRetry(t *testing.T) {
@@ -213,11 +216,7 @@ func TestOnlyIdempotentShouldRetry(t *testing.T) {
 			req, err := http.NewRequestWithContext(context.Background(), test.method, "http://test.com", nil)
 			require.NoError(t, err)
 
-			if test.expected {
-				assert.True(t, OnlyIdempotentShouldRetry(1, req, nil, nil))
-			} else {
-				assert.False(t, OnlyIdempotentShouldRetry(1, req, nil, nil))
-			}
+			assert.Equal(t, test.expected, OnlyIdempotentShouldRetry(1, req, nil, nil))
 		})
 	}
 }
@@ -228,18 +227,18 @@ func TestAllRetryers(t *testing.T) {
 	// false + false = false
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://test.com", nil)
 	require.NoError(t, err)
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil))
+	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil)) // nolint: bodyclose
 
 	// true + false = false
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(500), nil))
+	assert.False(t, r.ShouldRetry(1, req, MockResponse(500), nil)) // nolint: bodyclose
 
 	// false + true = false
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "http://test.com", nil)
 	require.NoError(t, err)
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil))
+	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil)) // nolint: bodyclose
 
 	// true + true = true
-	assert.True(t, r.ShouldRetry(1, req, MockResponse(500), nil))
+	assert.True(t, r.ShouldRetry(1, req, MockResponse(500), nil)) // nolint: bodyclose
 }
 
 func TestRetry(t *testing.T) {
@@ -258,15 +257,19 @@ func TestRetry(t *testing.T) {
 
 	i := httptestutil.Inspect(s)
 
-	var resp *http.Response
-	var err error
+	var (
+		resp *http.Response
+		err  error
+	)
+
 	t0 := time.Now()
 	done := make(chan bool)
 
 	go func() {
 		// spawn a go routine to call the client.  this will block until all the retries
 		// finish.
-		resp, _, err = r.Receive(nil)
+		resp, _, err = r.Receive(nil) // nolint: bodyclose
+
 		// capture the response, and send a signal that the client finished.
 		done <- true
 	}()
@@ -299,13 +302,18 @@ loop:
 	}
 
 	assert.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	if assert.NotNil(t, resp) {
 		assert.Equal(t, 500, resp.StatusCode)
 	}
 
 	assert.Equal(t, 4, count)
 	require.Len(t, waits, 3)
+
 	t.Log(waits)
+
 	assert.InDelta(t, 50*time.Millisecond, waits[0], float64(10*time.Millisecond))
 	assert.InDelta(t, 100*time.Millisecond, waits[1], float64(10*time.Millisecond))
 	assert.InDelta(t, 200*time.Millisecond, waits[2], float64(10*time.Millisecond))
@@ -338,6 +346,7 @@ func TestRetry_post(t *testing.T) {
 			count++
 
 			assert.Equal(t, "POST", e.Request.Method)
+
 			if expectBody {
 				assert.Equal(t, "fudge", e.RequestBody.String())
 			}
@@ -349,8 +358,10 @@ func TestRetry_post(t *testing.T) {
 	// most body types will be automatically wrapped with an appropriate GetBody function, so they can
 	// be correctly replayed.
 	resp, _, err := r.Receive(Post(), Body("fudge"))
-
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, 500, resp.StatusCode)
 	assert.Equal(t, 4, count(t))
 
@@ -358,6 +369,9 @@ func TestRetry_post(t *testing.T) {
 	// This will not be retried.
 	resp, _, err = r.Receive(Post(), Body(&dummyReader{next: strings.NewReader("fudge")}))
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, 500, resp.StatusCode)
 	assert.Equal(t, 1, count(t))
 
@@ -366,6 +380,9 @@ func TestRetry_post(t *testing.T) {
 	expectBody = false
 	resp, _, err = r.Receive(Post(), Body(http.NoBody))
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, 500, resp.StatusCode)
 	assert.Equal(t, 4, count(t))
 }
@@ -384,7 +401,7 @@ func TestRetry_respDrained(t *testing.T) {
 	s := httptest.NewServer(MockHandler(500, Body("fudge")))
 	defer s.Close()
 
-	var resps []*http.Response
+	var responses []*http.Response
 
 	r := httptestutil.Requester(s, Retry(&RetryConfig{
 		MaxAttempts: 4,
@@ -392,21 +409,27 @@ func TestRetry_respDrained(t *testing.T) {
 	}), Middleware(func(doer Doer) Doer {
 		return DoerFunc(func(req *http.Request) (*http.Response, error) {
 			resp, err := doer.Do(req)
-			resps = append(resps, resp)
+			responses = append(responses, resp)
+
 			return resp, err
 		})
 	}))
 
-	_, body, err := r.Receive(nil)
+	resp, body, err := r.Receive(nil)
 	assert.NoError(t, err)
-	assert.Equal(t, 4, len(resps))
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, 4, len(responses))
 	assert.Equal(t, "fudge", string(body))
 
 	// all the response bodies should have been drained
-	for i, resp := range resps {
+	for i, resp := range responses {
 		t.Log("checking response", i)
 		require.NotNil(t, resp)
+
 		bytes := make([]byte, 39)
+
 		_, err := resp.Body.Read(bytes)
 		assert.EqualError(t, err, "http: read on closed response body")
 	}
@@ -425,10 +448,12 @@ func TestRetry_cancelContext(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	var err error
+
 	done := make(chan bool)
 
 	go func() {
-		_, _, err = r.ReceiveContext(ctx, nil)
+		_, _, err = r.ReceiveContext(ctx, nil) // nolint: bodyclose
+
 		done <- true
 	}()
 
@@ -447,17 +472,21 @@ func TestRetry_shouldRetry(t *testing.T) {
 	// test a custom ShouldRetry function.  also test that Retry calls the ShouldRetry function
 	// with the right args.
 	var srvCount int
+
 	s := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		srvCount++
 		writer.WriteHeader(501 + srvCount)
-		writer.Write([]byte("fudge"))
+		writer.Write([]byte("fudge")) // nolint: errcheck
 	}))
+
 	defer s.Close()
 
-	var count int
-	var attempts []int
-	var reqs []*http.Request
-	var resps []*http.Response
+	var (
+		count     int
+		attempts  []int
+		requests  []*http.Request
+		responses []*http.Response
+	)
 
 	r := httptestutil.Requester(s, Retry(&RetryConfig{
 		MaxAttempts: 4,
@@ -465,14 +494,17 @@ func TestRetry_shouldRetry(t *testing.T) {
 		ShouldRetry: ShouldRetryerFunc(func(attempt int, req *http.Request, resp *http.Response, err error) bool {
 			count++
 			attempts = append(attempts, attempt)
-			reqs = append(reqs, req)
-			resps = append(resps, resp)
+			requests = append(requests, req)
+			responses = append(responses, resp) // nolint: bodyclose
+
 			return attempt != 3
 		}),
 	}))
 
-	_, _, err := r.Receive(nil)
+	resp, _, err := r.Receive(nil)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
 
 	// our should function should tell it stop after 3 attempts, not 4
 	assert.Equal(t, 3, count)
@@ -481,11 +513,13 @@ func TestRetry_shouldRetry(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		// attempts should be 1, 2, and 3
 		assert.Equal(t, i+1, attempts[i])
-		// reqs and resps should be non nil
-		assert.NotNil(t, reqs[i])
-		if assert.NotNil(t, resps[i]) {
+
+		// requests and responses should be non nil
+		assert.NotNil(t, requests[i])
+
+		if assert.NotNil(t, responses[i]) {
 			// each response should have a different code: 502, 503, and 504
-			assert.Equal(t, 501+attempts[i], resps[i].StatusCode)
+			assert.Equal(t, 501+attempts[i], responses[i].StatusCode)
 		}
 	}
 }
@@ -501,6 +535,9 @@ func TestRetry_success(t *testing.T) {
 
 	resp, body, err := r.Receive(nil)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, "fudge", string(body))
 	assert.Equal(t, 200, resp.StatusCode)
 
@@ -518,8 +555,10 @@ func (r *poisonedReader) Read(p []byte) (n int, err error) {
 	if r.remaining > 0 {
 		n = copy(p, "fu"[r.remaining:])
 		r.remaining -= n
+
 		return n, nil
 	}
+
 	return 0, &net.OpError{
 		Op:  "accept",
 		Err: syscall.ECONNRESET,
@@ -562,10 +601,13 @@ func TestRetry_readResponse(t *testing.T) {
 				// a few bytes
 				resp := MockResponse(200)
 				resp.Body = io.NopCloser(&poisonedReader{})
+
 				return resp, nil
 			})),
 		)
+
 		require.NoError(t, err)
+
 		return r
 	}
 
@@ -573,9 +615,11 @@ func TestRetry_readResponse(t *testing.T) {
 
 	// without setting flag, it should fail after the first attempt.
 	// it will not be retried
-	_, _, err := r.Receive(nil)
+	resp, _, err := r.Receive(nil)
 	assert.ErrorIs(t, err, syscall.ECONNRESET)
 	assert.Equal(t, 1, count)
+
+	defer resp.Body.Close()
 
 	// now try the flag
 	count = 0
@@ -584,6 +628,9 @@ func TestRetry_readResponse(t *testing.T) {
 
 	resp, body, err := r.Receive(nil)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	assert.Equal(t, "fudge", string(body))
 	assert.Equal(t, 200, resp.StatusCode)
 

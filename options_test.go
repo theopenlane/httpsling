@@ -83,6 +83,7 @@ func TestURL(t *testing.T) {
 	for _, base := range cases {
 		t.Run("", func(t *testing.T) {
 			reqs, errFromNew := New(URL(base))
+
 			u, err := url.Parse(base)
 			if err == nil {
 				require.Equal(t, u, reqs.URL)
@@ -321,10 +322,13 @@ func TestBasicAuth(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
+
 			req, err := reqs.RequestContext(context.Background())
 			require.NoError(t, err)
+
 			username, password, ok := req.BasicAuth()
 			require.True(t, ok, "basic auth missing when expected")
+
 			auth := []string{username, password}
 			require.Equal(t, c.expectedAuth, auth)
 		})
@@ -363,8 +367,10 @@ func TestBearerAuth(t *testing.T) {
 	t.Run("clearing", func(t *testing.T) {
 		reqs, err := New(BearerAuth("green"))
 		require.NoError(t, err)
+
 		err = reqs.Apply(BearerAuth(""))
 		require.NoError(t, err)
+
 		_, ok := reqs.Header["Authorization"]
 		require.False(t, ok, "should have removed Authorization header, instead was %s", reqs.Header.Get("Authorization"))
 	})
@@ -419,6 +425,7 @@ func TestQueryParams(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
+
 			require.Equal(t, c.expectedParams, reqs.QueryParams)
 		})
 	}
@@ -445,6 +452,7 @@ func TestQueryParam(t *testing.T) {
 func TestBody(t *testing.T) {
 	reqs, err := New(Body("hey"))
 	require.NoError(t, err)
+
 	require.Equal(t, "hey", reqs.Body)
 }
 
@@ -462,13 +470,16 @@ func TestMarshaler(t *testing.T) {
 	m := &testMarshaler{}
 	reqs, err := New(WithMarshaler(m))
 	require.NoError(t, err)
+
 	require.Equal(t, m, reqs.Marshaler)
 }
 
 func TestUnmarshaler(t *testing.T) {
 	m := &testMarshaler{}
+
 	reqs, err := New(WithUnmarshaler(m))
 	require.NoError(t, err)
+
 	require.Equal(t, m, reqs.Unmarshaler)
 }
 
@@ -482,7 +493,6 @@ func TestJSON(t *testing.T) {
 	}
 
 	err = reqs.Apply(JSON(true))
-
 	require.NoError(t, err)
 
 	if assert.IsType(t, &JSONMarshaler{}, reqs.Marshaler) {
@@ -492,7 +502,6 @@ func TestJSON(t *testing.T) {
 
 func TestXML(t *testing.T) {
 	reqs, err := New(XML(false))
-
 	require.NoError(t, err)
 
 	if assert.IsType(t, &XMLMarshaler{}, reqs.Marshaler) {
@@ -500,7 +509,6 @@ func TestXML(t *testing.T) {
 	}
 
 	err = reqs.Apply(XML(true))
-
 	require.NoError(t, err)
 
 	if assert.IsType(t, &XMLMarshaler{}, reqs.Marshaler) {
@@ -511,6 +519,7 @@ func TestXML(t *testing.T) {
 func TestForm(t *testing.T) {
 	reqs, err := New(Form())
 	require.NoError(t, err)
+
 	assert.IsType(t, &FormMarshaler{}, reqs.Marshaler)
 }
 
@@ -528,21 +537,25 @@ func TestUse(t *testing.T) {
 	}
 
 	r := MustNew(Use(mw, mw2), MockDoer(200))
-	_, _, err := r.Receive(nil)
 
+	resp, _, err := r.Receive(nil)
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
+
+	defer resp.Body.Close()
 
 	assert.Equal(t, []string{"two", "one"}, outputs)
 	outputs = []string{}
 
 	r.MustApply(Use(mw))
-	_, _, err = r.Receive(nil)
 
+	resp, _, err = r.Receive(nil)
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
+
+	defer resp.Body.Close()
 
 	assert.Equal(t, []string{"one", "two", "one"}, outputs)
 }
@@ -629,8 +642,9 @@ func ExampleBody_raw() {
 	fmt.Println(string(b))
 }
 
+// nolint: errcheck
 func ExampleClient() {
-	Send(
+	Send( // nolint: bodyclose
 		URL("https://localhost:6060"),
 		Client(httpclient.SkipVerify(true)),
 	)

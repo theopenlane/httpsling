@@ -11,6 +11,7 @@ func MockDoer(statusCode int, options ...Option) DoerFunc {
 	return func(req *http.Request) (*http.Response, error) {
 		resp := MockResponse(statusCode, options...)
 		resp.Request = req
+
 		return resp, nil
 	}
 }
@@ -22,6 +23,7 @@ func ChannelDoer() (chan<- *http.Response, DoerFunc) {
 	return input, func(req *http.Request) (*http.Response, error) {
 		resp := <-input
 		resp.Request = req
+
 		return resp, nil
 	}
 }
@@ -48,6 +50,7 @@ func MockResponse(statusCode int, options ...Option) *http.Response {
 	if resp.Body == nil {
 		resp.Body = io.NopCloser(strings.NewReader(""))
 	}
+
 	return resp
 }
 
@@ -69,7 +72,9 @@ func MockHandler(statusCode int, options ...Option) http.Handler {
 		writer.WriteHeader(statusCode)
 
 		if req.Body != nil {
-			_, _ = io.Copy(writer, req.Body)
+			if _, err := io.Copy(writer, req.Body); err != nil {
+				panic(err)
+			}
 		}
 	})
 }
@@ -88,6 +93,10 @@ func ChannelHandler() (chan<- *http.Response, http.Handler) {
 
 		writer.WriteHeader(resp.StatusCode)
 
-		_, _ = io.Copy(writer, resp.Body)
+		if _, err := io.Copy(writer, resp.Body); err != nil {
+			panic(err)
+		}
+
+		defer resp.Body.Close()
 	})
 }

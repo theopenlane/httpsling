@@ -3,6 +3,7 @@ package httpsling
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"math/rand"
@@ -10,8 +11,6 @@ import (
 	"net/http"
 	"syscall"
 	"time"
-
-	"github.com/ansel1/merry"
 )
 
 // DefaultRetryConfig is the default retry configuration used if nil is passed to Retry()
@@ -101,6 +100,7 @@ func AllRetryers(s ...ShouldRetryer) ShouldRetryer {
 				return false
 			}
 		}
+
 		return true
 	})
 }
@@ -270,7 +270,7 @@ func resetRequest(req *http.Request) (*http.Request, error) {
 	if req.Body != nil && req.Body != http.NoBody {
 		b, err := req.GetBody()
 		if err != nil {
-			return nil, merry.Prepend(err, "calling req.GetBody")
+			return nil, fmt.Errorf("error calling req.GetBody: %w", err)
 		}
 
 		req.Body = b

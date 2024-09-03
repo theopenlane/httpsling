@@ -11,16 +11,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ansel1/merry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDump(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, err := w.Write([]byte(`{"color":"red"}`))
-		if err != nil {
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
+
+		if _, err := w.Write([]byte(`{"color":"red"}`)); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}))
@@ -29,10 +28,12 @@ func TestDump(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	_, _, err := Receive(Get(ts.URL), Dump(b))
+	resp, _, err := Receive(Get(ts.URL), Dump(b))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	t.Log(b)
 
@@ -43,9 +44,9 @@ func TestDump(t *testing.T) {
 
 func TestDumpToLog(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, err := w.Write([]byte(`{"color":"red"}`))
-		if err != nil {
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
+
+		if _, err := w.Write([]byte(`{"color":"red"}`)); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}))
@@ -54,12 +55,14 @@ func TestDumpToLog(t *testing.T) {
 
 	var args []interface{}
 
-	_, _, err := Receive(Get(ts.URL), DumpToLog(func(a ...interface{}) {
+	resp, _, err := Receive(Get(ts.URL), DumpToLog(func(a ...interface{}) {
 		args = append(args, a...)
 	}))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	assert.Len(t, args, 2)
 
@@ -73,9 +76,9 @@ func TestDumpToLog(t *testing.T) {
 
 func TestDumpToStout(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, err := w.Write([]byte(`{"color":"red"}`))
-		if err != nil {
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
+
+		if _, err := w.Write([]byte(`{"color":"red"}`)); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}))
@@ -92,18 +95,20 @@ func TestDumpToStout(t *testing.T) {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
-		_, err := io.Copy(&buf, r)
-		if err != nil {
+
+		if _, err := io.Copy(&buf, r); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
 		outC <- buf.String()
 	}()
 
-	_, _, err := Receive(Get(ts.URL), DumpToStout())
+	resp, _, err := Receive(Get(ts.URL), DumpToStout())
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	// back to normal state
 	os.Stdout = old // restoring the real stdout
@@ -119,10 +124,9 @@ func TestDumpToStout(t *testing.T) {
 
 func TestDumpToSterr(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
 
-		_, err := w.Write([]byte(`{"color":"red"}`))
-		if err != nil {
+		if _, err := w.Write([]byte(`{"color":"red"}`)); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}))
@@ -139,18 +143,20 @@ func TestDumpToSterr(t *testing.T) {
 	// copy the output in a separate goroutine so printing can't block indefinitely
 	go func() {
 		var buf bytes.Buffer
-		_, err := io.Copy(&buf, r)
-		if err != nil {
+
+		if _, err := io.Copy(&buf, r); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
 		outC <- buf.String()
 	}()
 
-	_, _, err := Receive(Get(ts.URL), DumpToStderr())
+	resp, _, err := Receive(Get(ts.URL), DumpToStderr())
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
+
+	defer resp.Body.Close()
 
 	// back to normal state
 	os.Stderr = old // restoring the real stdout
@@ -167,8 +173,8 @@ func TestDumpToSterr(t *testing.T) {
 func TestExpectCode(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(407)
-		_, err := w.Write([]byte("boom!"))
-		if err != nil {
+
+		if _, err := w.Write([]byte("boom!")); err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
 	}))
@@ -181,6 +187,9 @@ func TestExpectCode(t *testing.T) {
 	// without middleware
 	resp, body, err := r.Receive(nil)
 	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
 	require.Equal(t, 407, resp.StatusCode)
 	require.Equal(t, "boom!", string(body))
 
@@ -189,24 +198,30 @@ func TestExpectCode(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, body, err = r.Receive(nil)
-	// body and response should still be returned
-	assert.Equal(t, 407, resp.StatusCode)
-	assert.Equal(t, "boom!", string(body))
+
 	// but an error should be returned too
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expected: 203")
 	assert.Contains(t, err.Error(), "received: 407")
-	assert.Equal(t, 407, merry.HTTPCode(err))
+
+	defer resp.Body.Close()
+
+	// body and response should still be returned
+	assert.Equal(t, 407, resp.StatusCode)
+	assert.Equal(t, "boom!", string(body))
 
 	// Using the option twice: latest option should win
-	_, _, err = r.Receive(ExpectCode(407))
+	resp, _, err = r.Receive(ExpectCode(407))
 	require.NoError(t, err)
 
+	defer resp.Body.Close()
+
 	// original requester's expect option should be unmodified
-	_, _, err = r.Receive(nil)
+	resp, _, err = r.Receive(nil)
 	// but an error should be returned too
 	require.Error(t, err)
-	require.Equal(t, 407, merry.HTTPCode(err))
+
+	defer resp.Body.Close()
 }
 
 func TestExpectSuccessCode(t *testing.T) {
@@ -225,6 +240,8 @@ func TestExpectSuccessCode(t *testing.T) {
 	require.Equal(t, 407, resp.StatusCode)
 	require.Equal(t, "boom!", string(body))
 
+	defer resp.Body.Close()
+
 	resp, body, err = Receive(Get(ts.URL), ExpectSuccessCode())
 	// body and response should still be returned
 	assert.Equal(t, 407, resp.StatusCode)
@@ -232,14 +249,17 @@ func TestExpectSuccessCode(t *testing.T) {
 	// but an error should be returned too
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "code: 407")
-	assert.Equal(t, 407, merry.HTTPCode(err))
+
+	defer resp.Body.Close()
 
 	// test positive path: if success code is returned, then no error should be returned
 	successCodes := []int{200, 201, 204, 278}
 	for _, code := range successCodes {
 		codeToReturn = code
-		_, _, err := Receive(Get(ts.URL), ExpectSuccessCode())
+		resp, _, err := Receive(Get(ts.URL), ExpectSuccessCode())
 		require.NoError(t, err, "should not have received an error for code %v", code)
+
+		defer resp.Body.Close()
 	}
 }
 
@@ -252,15 +272,19 @@ func ExampleMiddleware() {
 		})
 	}
 
-	_, err := Send(m)
+	resp, err := Send(m)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	_, err = Send(Use(m))
+	defer resp.Body.Close()
+
+	resp, err = Send(Use(m))
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	defer resp.Body.Close()
 
 	_ = Requester{
 		Middleware: []Middleware{m},
@@ -268,40 +292,50 @@ func ExampleMiddleware() {
 }
 
 func ExampleDumpToLog() {
-	_, err := Send(DumpToLog(func(a ...interface{}) {
+	resp, err := Send(DumpToLog(func(a ...interface{}) {
 		fmt.Println(a...)
 	}))
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	_, err = Send(DumpToLog(sdklog.Println))
+	defer resp.Body.Close()
+
+	resp, err = Send(DumpToLog(sdklog.Println))
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	defer resp.Body.Close()
 
 	var t *testing.T
 
-	_, err = Send(DumpToLog(t.Log))
+	resp, err = Send(DumpToLog(t.Log))
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	defer resp.Body.Close()
 }
 
 func ExampleExpectSuccessCode() {
-	_, _, err := Receive(
+	resp, _, err := Receive(
 		MockDoer(400),
 		ExpectSuccessCode(),
 	)
 
 	fmt.Println(err.Error())
+
+	defer resp.Body.Close()
 }
 
 func ExampleExpectCode() {
-	_, _, err := Receive(
+	resp, _, err := Receive(
 		MockDoer(400),
 		ExpectCode(201),
 	)
 
 	fmt.Println(err.Error())
+
+	defer resp.Body.Close()
 }
