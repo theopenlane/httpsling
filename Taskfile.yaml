@@ -36,7 +36,6 @@ tasks:
     aliases: [cover]
     cmds:
       - go test -v ./... -coverprofile=coverage.out
-      - go tool cover -html=coverage.out
 
   go:all:
     aliases: [go]
