@@ -454,7 +454,7 @@ func TestRetryCancelContext(t *testing.T) {
 	done := make(chan bool)
 
 	go func() {
-		_, err = r.ReceiveContext(ctx, nil) // nolint: bodyclose
+		_, err = r.ReceiveWithContext(ctx, nil) // nolint: bodyclose
 
 		done <- true
 	}()

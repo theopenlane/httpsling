@@ -103,11 +103,11 @@ func (r *Requester) Clone() *Requester {
 
 // Request returns a new http.Request
 func (r *Requester) Request(opts ...Option) (*http.Request, error) {
-	return r.RequestContext(context.Background(), opts...)
+	return r.RequestWithContext(context.Background(), opts...)
 }
 
-// RequestContext does the same as Request, but requires a context
-func (r *Requester) RequestContext(ctx context.Context, opts ...Option) (*http.Request, error) {
+// RequestWithContext does the same as Request, but requires a context
+func (r *Requester) RequestWithContext(ctx context.Context, opts ...Option) (*http.Request, error) {
 	requester, err := r.withOpts(opts...)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func (r *Requester) getRequestBody() (body io.Reader, contentType string, _ erro
 
 // Send executes a request with the Doer
 func (r *Requester) Send(opts ...Option) (*http.Response, error) {
-	return r.SendContext(context.Background(), opts...)
+	return r.SendWithContext(context.Background(), opts...)
 }
 
 // withOpts is like With(), but skips the clone if there are no options to apply
@@ -220,14 +220,14 @@ func (r *Requester) withOpts(opts ...Option) (*Requester, error) {
 	return r, nil
 }
 
-// SendContext does the same as Send, but requires a context
-func (r *Requester) SendContext(ctx context.Context, opts ...Option) (*http.Response, error) {
+// SendWithContext does the same as Send, but requires a context
+func (r *Requester) SendWithContext(ctx context.Context, opts ...Option) (*http.Response, error) {
 	reqs, err := r.withOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := reqs.RequestContext(ctx)
+	req, err := reqs.RequestWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -249,11 +249,12 @@ func (r *Requester) Do(req *http.Request) (*http.Response, error) {
 
 // Receive creates a new HTTP request and returns the response
 func (r *Requester) Receive(into interface{}, opts ...Option) (resp *http.Response, err error) {
-	return r.ReceiveContext(context.Background(), into, opts...)
+	return r.ReceiveWithContext(context.Background(), into, opts...)
 }
 
-// ReceiveContext does the same as Receive, but requires a context
-func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts ...Option) (resp *http.Response, err error) {
+// ReceiveWithContext does the same as Receive, but requires a context
+func (r *Requester) ReceiveWithContext(ctx context.Context, into interface{}, opts ...Option) (resp *http.Response, err error) {
+	// if the first option is an Option, we need to copy those over and set into to nil
 	if opt, ok := into.(Option); ok {
 		opts = append(opts, nil)
 		copy(opts[1:], opts)
@@ -261,23 +262,25 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 		into = nil
 	}
 
+	// apply the options to the requester
 	r, err = r.withOpts(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err = r.SendContext(ctx)
-
-	body, bodyReadError := readBody(resp)
-
+	// send the request
+	resp, err = r.SendWithContext(ctx)
 	if err != nil {
 		return resp, err
 	}
 
+	// read the body
+	body, bodyReadError := readBody(resp)
 	if bodyReadError != nil {
 		return resp, bodyReadError
 	}
 
+	// if the into is not nil, unmarshal the body into it
 	if into != nil {
 		unmarshaler := r.Unmarshaler
 		if unmarshaler == nil {
@@ -290,24 +293,26 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 	return resp, err
 }
 
+// readBody reads the body of an HTTP response
 func readBody(resp *http.Response) ([]byte, error) {
+	// check for a nil response
 	if resp == nil || resp.Body == nil || resp.Body == http.NoBody {
 		return nil, nil
 	}
 
 	defer resp.Body.Close()
 
-	cls := resp.Header.Get(HeaderContentLength)
+	contentLengthHeader := resp.Header.Get(HeaderContentLength)
 
-	var cl int64
+	var contentLength int64
 
-	if cls != "" {
-		cl, _ = strconv.ParseInt(cls, 10, 0)
+	if contentLengthHeader != "" {
+		contentLength, _ = strconv.ParseInt(contentLengthHeader, 10, 0)
 	}
 
 	buf := bytes.Buffer{}
-	if cl > 0 {
-		buf.Grow(int(cl))
+	if contentLength > 0 {
+		buf.Grow(int(contentLength))
 	}
 
 	if _, err := buf.ReadFrom(resp.Body); err != nil {
@@ -352,4 +357,14 @@ func (r *Requester) HTTPClient() *http.Client {
 	}
 
 	return client
+}
+
+// CookieJar returns the CookieJar used by the Requester, if it exists
+func (r *Requester) CookieJar() http.CookieJar {
+	client := r.HTTPClient()
+	if client == nil {
+		return nil
+	}
+
+	return client.Jar
 }

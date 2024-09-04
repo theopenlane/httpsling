@@ -7,6 +7,9 @@ const (
 	HeaderProxyAuthorization = "Proxy-Authorization"
 	HeaderWWWAuthenticate    = "WWW-Authenticate"
 
+	BearerAuthHeader = "Bearer "
+	BasicAuthHeader  = "Basic "
+
 	// Caching
 	HeaderAge           = "Age"
 	HeaderCacheControl  = "Cache-Control"

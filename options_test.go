@@ -323,7 +323,7 @@ func TestBasicAuth(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
 
-			req, err := reqs.RequestContext(context.Background())
+			req, err := reqs.RequestWithContext(context.Background())
 			require.NoError(t, err)
 
 			username, password, ok := req.BasicAuth()

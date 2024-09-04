@@ -136,7 +136,7 @@ func TestRequesterRequestURLAndMethod(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
-			req, err := reqs.RequestContext(context.Background())
+			req, err := reqs.RequestWithContext(context.Background())
 			require.NoError(t, err)
 			assert.Equal(t, c.expectedURL, req.URL.String())
 			assert.Equal(t, c.expectedMethod, req.Method)
@@ -146,7 +146,7 @@ func TestRequesterRequestURLAndMethod(t *testing.T) {
 	t.Run("invalidmethod", func(t *testing.T) {
 		b, err := New(Method("@"))
 		require.NoError(t, err)
-		req, err := b.RequestContext(context.Background())
+		req, err := b.RequestWithContext(context.Background())
 		require.Error(t, err)
 		require.Nil(t, req)
 	})
@@ -167,7 +167,7 @@ func TestRequesterRequestQueryParams(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
 
-			req, _ := reqs.RequestContext(context.Background())
+			req, _ := reqs.RequestWithContext(context.Background())
 			require.Equal(t, c.expectedURL, req.URL.String())
 		})
 	}
@@ -199,7 +199,7 @@ func TestRequesterRequestBody(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			reqs, err := New(c.options...)
 			require.NoError(t, err)
-			req, err := reqs.RequestContext(context.Background())
+			req, err := reqs.RequestWithContext(context.Background())
 			require.NoError(t, err)
 
 			if reqs.Body != nil {
@@ -230,7 +230,7 @@ func TestRequesterRequestMarshaler(t *testing.T) {
 		}),
 	}
 
-	req, err := requester.RequestContext(context.Background())
+	req, err := requester.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, []string{"blue"}, capturedV)
@@ -246,7 +246,7 @@ func TestRequesterRequestMarshaler(t *testing.T) {
 			return nil, "", errors.New("boom") // nolint: err113
 		})
 
-		_, err := requester.RequestContext(context.Background())
+		_, err := requester.RequestWithContext(context.Background())
 		require.Error(t, err, "boom")
 	})
 }
@@ -255,7 +255,7 @@ func TestRequesterRequestContentLength(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// content length should be set automatically
@@ -264,7 +264,7 @@ func TestRequesterRequestContentLength(t *testing.T) {
 	// I should be able to override it
 	reqs.ContentLength = 10
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.EqualValues(t, 10, req.ContentLength)
@@ -274,7 +274,7 @@ func TestRequesterRequestGetBody(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// GetBody should be populated automatically
@@ -291,7 +291,7 @@ func TestRequesterRequestGetBody(t *testing.T) {
 		return io.NopCloser(strings.NewReader("5678")), nil
 	}
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	rdr, err = req.GetBody()
@@ -307,7 +307,7 @@ func TestRequesterRequestHost(t *testing.T) {
 	reqs, err := New(URL("http://test.com/red"))
 	require.NoError(t, err)
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// Host should be set automatically
@@ -316,7 +316,7 @@ func TestRequesterRequestHost(t *testing.T) {
 	// but I can override it
 	reqs.Host = "test2.com"
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, "test2.com", req.Host)
@@ -325,7 +325,7 @@ func TestRequesterRequestHost(t *testing.T) {
 func TestRequesterRequestTransferEncoding(t *testing.T) {
 	reqs := Requester{}
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// should be empty by default
@@ -334,7 +334,7 @@ func TestRequesterRequestTransferEncoding(t *testing.T) {
 	// but I can set it
 	reqs.TransferEncoding = []string{"red"}
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, reqs.TransferEncoding, req.TransferEncoding)
@@ -343,7 +343,7 @@ func TestRequesterRequestTransferEncoding(t *testing.T) {
 func TestRequesterRequestClose(t *testing.T) {
 	reqs := Requester{}
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// should be false by default
@@ -352,7 +352,7 @@ func TestRequesterRequestClose(t *testing.T) {
 	// but I can set it
 	reqs.Close = true
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.True(t, req.Close)
@@ -361,7 +361,7 @@ func TestRequesterRequestClose(t *testing.T) {
 func TestRequesterRequestTrailer(t *testing.T) {
 	reqs := Requester{}
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// should be empty by default
@@ -370,7 +370,7 @@ func TestRequesterRequestTrailer(t *testing.T) {
 	// but I can set it
 	reqs.Trailer = http.Header{"color": []string{"red"}}
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, reqs.Trailer, req.Trailer)
@@ -379,7 +379,7 @@ func TestRequesterRequestTrailer(t *testing.T) {
 func TestRequesterRequestHeader(t *testing.T) {
 	reqs := Requester{}
 
-	req, err := reqs.RequestContext(context.Background())
+	req, err := reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	// should be empty by default
@@ -388,7 +388,7 @@ func TestRequesterRequestHeader(t *testing.T) {
 	// but I can set it
 	reqs.Header = http.Header{"color": []string{"red"}}
 
-	req, err = reqs.RequestContext(context.Background())
+	req, err = reqs.RequestWithContext(context.Background())
 	require.NoError(t, err)
 
 	require.Equal(t, reqs.Header, req.Header)
@@ -397,7 +397,7 @@ func TestRequesterRequestHeader(t *testing.T) {
 func TestRequesterRequestContext(t *testing.T) {
 	reqs := Requester{}
 
-	req, err := reqs.RequestContext(context.WithValue(context.Background(), colorContextKey, "red"))
+	req, err := reqs.RequestWithContext(context.WithValue(context.Background(), colorContextKey, "red"))
 	require.NoError(t, err)
 
 	require.Equal(t, "red", req.Context().Value(colorContextKey))
@@ -430,7 +430,7 @@ func TestRequesterSendContext(t *testing.T) {
 	i := Inspector{}
 	r := MustNew(Get(ts.URL), &i)
 
-	resp, err := r.SendContext(
+	resp, err := r.SendWithContext(
 		context.WithValue(context.Background(), colorContextKey, "purple"),
 		Post("/server"),
 	)
@@ -504,7 +504,7 @@ func TestRequesterReceiveContext(t *testing.T) {
 			t.Run(fmt.Sprintf("into=%v", c.into), func(t *testing.T) {
 				i := Inspector{}
 
-				resp, err := ReceiveContext(
+				resp, err := ReceiveWithContext(
 					context.WithValue(context.Background(), colorContextKey, "purple"),
 					c.into,
 					Get(ts.URL, "/model.json"),
@@ -530,7 +530,7 @@ func TestRequesterReceiveContext(t *testing.T) {
 		)
 
 		urlBefore := r.URL.String()
-		resp, err := r.ReceiveContext(
+		resp, err := r.ReceiveWithContext(
 			context.Background(),
 			Get("/err"),
 		)
@@ -580,7 +580,7 @@ func TestRequesterReceiveContext(t *testing.T) {
 
 		// variants
 		ctx := context.Background()
-		resp, err = r.ReceiveContext(ctx, Get("/blue"))
+		resp, err = r.ReceiveWithContext(ctx, Get("/blue"))
 		require.NoError(t, err)
 
 		defer resp.Body.Close()

@@ -21,7 +21,7 @@ type testContextKey string
 const colorContextKey = testContextKey("color")
 
 func TestRequestContext(t *testing.T) {
-	req, err := RequestContext(
+	req, err := RequestWithContext(
 		context.WithValue(context.Background(), colorContextKey, "green"),
 		Get("http://blue.com/red"),
 	)
@@ -47,7 +47,7 @@ func TestSend(t *testing.T) {
 func TestSendContext(t *testing.T) {
 	i := Inspector{}
 
-	resp, err := SendContext(
+	resp, err := SendWithContext(
 		context.WithValue(context.Background(), colorContextKey, "blue"),
 		Get("/profile"),
 		WithDoer(MockDoer(204)),
@@ -82,7 +82,7 @@ func TestReceive(t *testing.T) {
 
 		i := Inspector{}
 
-		resp, err := ReceiveContext(
+		resp, err := ReceiveWithContext(
 			context.WithValue(context.Background(), colorContextKey, "yellow"),
 			&m,
 			Get("/red"),

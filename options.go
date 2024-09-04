@@ -150,7 +150,7 @@ func BasicAuth(username, password string) Option {
 		return DeleteHeader(HeaderAuthorization)
 	}
 
-	return Header(HeaderAuthorization, "Basic "+basicAuth(username, password))
+	return Header(HeaderAuthorization, BearerAuthHeader+basicAuth(username, password))
 }
 
 // basicAuth returns the base64 encoded username:password for basic auth copied from net/http
@@ -166,7 +166,7 @@ func BearerAuth(token string) Option {
 		return DeleteHeader(HeaderAuthorization)
 	}
 
-	return Header(HeaderAuthorization, "Bearer "+token)
+	return Header(HeaderAuthorization, BearerAuthHeader+token)
 }
 
 // URL sets the request URL

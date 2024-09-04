@@ -59,7 +59,7 @@ func MockHandler(statusCode int, options ...Option) http.Handler {
 	r := MustNew(options...)
 
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		req, err := r.RequestContext(request.Context())
+		req, err := r.RequestWithContext(request.Context())
 		if err != nil {
 			panic(err)
 		}
