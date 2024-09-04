@@ -177,11 +177,8 @@ func ConstantBackoffWithJitter(delay time.Duration) *ExponentialBackoff {
 // Retry retries the http request under certain conditions - the number of retries,
 // retry conditions, and the time to sleep between retries can be configured
 func Retry(config *RetryConfig) Middleware {
-	var c RetryConfig
-
-	if config == nil {
-		c = DefaultRetryConfig
-	} else {
+	c := DefaultRetryConfig
+	if config != nil {
 		c = *config
 	}
 
@@ -189,15 +186,15 @@ func Retry(config *RetryConfig) Middleware {
 
 	return func(next Doer) Doer {
 		return DoerFunc(func(req *http.Request) (*http.Response, error) {
-			if req.Body != nil && req.Body != http.NoBody && req.GetBody == nil {
+			if bodyEmpty(req) {
 				return next.Do(req)
 			}
 
-			var resp *http.Response
-
-			var err error
-
-			var attempt int
+			var (
+				resp    *http.Response
+				err     error
+				attempt int
+			)
 
 			for {
 				resp, err = next.Do(req)
@@ -230,6 +227,10 @@ func Retry(config *RetryConfig) Middleware {
 			return resp, err
 		})
 	}
+}
+
+func bodyEmpty(req *http.Request) bool {
+	return req.Body != nil && req.Body != http.NoBody && req.GetBody == nil
 }
 
 type errCloser struct {
