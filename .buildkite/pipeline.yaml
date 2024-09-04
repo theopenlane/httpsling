@@ -11,7 +11,7 @@ steps:
         cancel_on_build_failing: true
         plugins:
           - docker#v5.11.0:
-              image: "ghcr.io/theopenlane/build-image:latest"
+              image: "ghcr.io/theopenlane/build-image:10-79feda49"
               always-pull: true
               command: ["task", "go:lint"]
               environment:
@@ -21,7 +21,7 @@ steps:
         cancel_on_build_failing: true
         plugins:
           - docker#v5.11.0:
-              image: "ghcr.io/theopenlane/build-image:latest"
+              image: "ghcr.io/theopenlane/build-image:10-79feda49"
               always-pull: true
               command: ["task", "go:test:cover"]
               environment:
