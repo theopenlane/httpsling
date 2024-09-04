@@ -216,7 +216,7 @@ func ExampleChannelHandler() {
 	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
-	fmt.Printf("%s", out)
+	fmt.Println(out)
 
 	// Output:
 	// 201

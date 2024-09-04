@@ -31,7 +31,7 @@ func Example() {
 	fmt.Println("server sent: " + strconv.Itoa(ex.StatusCode))
 	fmt.Println("server sent: " + ex.ResponseBody.String())
 	fmt.Println("client received: " + strconv.Itoa(resp.StatusCode))
-	fmt.Println("client received: " + fmt.Sprintf("%s", out))
+	fmt.Println("client received: " + out)
 
 	// Output:
 	// server received: ping

@@ -575,6 +575,8 @@ func ExampleAddHeader() {
 	)
 
 	fmt.Println(r.Headers()["Color"])
+
+	// Output: [red blue]
 }
 
 func ExampleDeleteHeader() {
@@ -588,24 +590,32 @@ func ExampleDeleteHeader() {
 	r.MustApply(DeleteHeader("color"))
 
 	fmt.Println(r.Header)
+
+	// Output: map[Flavor:[vanilla]]
 }
 
 func ExampleHeader() {
 	r := MustNew(Header("color", "red"))
 
 	fmt.Println(r.Header)
+
+	// Output: map[Color:[red]]
 }
 
 func ExampleBasicAuth() {
 	r := MustNew(BasicAuth("user", "password"))
 
 	fmt.Println(r.Header.Get(HeaderAuthorization))
+
+	// Output: Basic dXNlcjpwYXNzd29yZA==
 }
 
 func ExampleBearerAuth() {
 	r := MustNew(BearerAuth("1234"))
 
 	fmt.Println(r.Header.Get(HeaderAuthorization))
+
+	// Output: Bearer 1234
 }
 
 func ExampleBody() {
@@ -620,6 +630,8 @@ func ExampleBody() {
 	b, _ := io.ReadAll(req.Body)
 
 	fmt.Println(string(b))
+
+	// Output: {"color":"red"}
 }
 
 func ExampleBody_map() {
@@ -628,6 +640,8 @@ func ExampleBody_map() {
 	b, _ := io.ReadAll(req.Body)
 
 	fmt.Println(string(b))
+
+	// Output: {"color":"red"}
 }
 
 func ExampleBody_raw() {
@@ -640,6 +654,8 @@ func ExampleBody_raw() {
 	b, _ := io.ReadAll(req.Body)
 
 	fmt.Println(string(b))
+
+	// Output: red
 }
 
 // nolint: errcheck
@@ -654,48 +670,64 @@ func ExampleContentType() {
 	r := MustNew(ContentType(ContentTypeText))
 
 	fmt.Println(r.Headers().Get(HeaderContentType))
+
+	// Output: text/plain
 }
 
 func ExampleMethod() {
 	r := MustNew(Method("CONNECT", "/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: CONNECT /resources/1
 }
 
 func ExampleDelete() {
 	r := MustNew(Delete("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: DELETE /resources/1
 }
 
 func ExamplePut() {
 	r := MustNew(Put("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: PUT /resources/1
 }
 
 func ExamplePatch() {
 	r := MustNew(Patch("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: PATCH /resources/1
 }
 
 func ExamplePost() {
 	r := MustNew(Post("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: POST /resources/1
 }
 
 func ExampleGet() {
 	r := MustNew(Get("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: GET /resources/1
 }
 
 func ExampleHead() {
 	r := MustNew(Head("/resources/", "1"))
 
 	fmt.Println(r.Method, r.URL.String())
+
+	// Output: HEAD /resources/1
 }
 
 func ExampleHost() {
@@ -710,6 +742,8 @@ func ExampleQueryParam() {
 	r := MustNew(QueryParam("color", "red"))
 
 	fmt.Println(r.Params().Encode())
+
+	// Output: color=red
 }
 
 func ExampleQueryParams() {
@@ -727,6 +761,8 @@ func ExampleQueryParams() {
 	req, _ := r.Request(RelativeURL("?weight=heavy"))
 
 	fmt.Println(req.URL.RawQuery)
+
+	// Output: color=red&flavor=vanilla&size=big&volume=loud&weight=heavy
 }
 
 func ExampleRelativeURL() {
@@ -736,6 +772,8 @@ func ExampleRelativeURL() {
 	)
 
 	fmt.Println(r.URL.String())
+
+	// Output: http://test.com/green/red/blue
 }
 
 func ExampleAppendPath() {
@@ -749,6 +787,14 @@ func ExampleAppendPath() {
 
 	fmt.Println("RelativeURL: " + r.MustWith(RelativeURL("frank", "nicknames")).URL.String())
 	fmt.Println("AppendPath:  " + r.MustWith(AppendPath("frank", "nicknames")).URL.String())
+
+	// Output:
+	// RelativeURL: http://test.com/users/frank
+	// AppendPath:  http://test.com/users/bob/frank
+	// RelativeURL: http://test.com/frank
+	// AppendPath:  http://test.com/users/bob/frank
+	// RelativeURL: http://test.com/users/nicknames
+	// AppendPath:  http://test.com/users/bob/frank/nicknames
 }
 
 func ExampleRequester_Clone() {
@@ -763,4 +809,6 @@ func ExampleRequester_Clone() {
 	if err := bar.Apply(Get("bar/")); err != nil {
 		fmt.Println(err)
 	}
+
+	// Output:
 }

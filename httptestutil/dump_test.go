@@ -2,7 +2,6 @@ package httptestutil
 
 import (
 	"bytes"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -91,7 +90,7 @@ func TestDumpWithInspect(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, 201, resp.StatusCode)
-			assert.Equal(t, "pong", fmt.Sprintf("%s", out))
+			assert.Equal(t, "pong", out)
 			require.NotEmpty(t, buf.Bytes())
 			assert.Contains(t, buf.String(), "ping")
 			assert.Contains(t, buf.String(), "pong")

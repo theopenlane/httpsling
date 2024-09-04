@@ -92,13 +92,13 @@ func cloneValues(v url.Values) url.Values {
 
 // Clone returns a deep copy of a Requester
 func (r *Requester) Clone() *Requester {
-	s2 := *r
-	s2.Header = r.Header.Clone()
-	s2.Trailer = r.Trailer.Clone()
-	s2.URL = cloneURL(r.URL)
-	s2.QueryParams = cloneValues(r.QueryParams)
+	req := *r
+	req.Header = r.Header.Clone()
+	req.Trailer = r.Trailer.Clone()
+	req.URL = cloneURL(r.URL)
+	req.QueryParams = cloneValues(r.QueryParams)
 
-	return &s2
+	return &req
 }
 
 // Request returns a new http.Request

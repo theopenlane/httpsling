@@ -189,6 +189,10 @@ func ExampleFormMarshaler() {
 
 	fmt.Println(string(b))
 	fmt.Println(req.Header.Get(HeaderContentType))
+
+	// Output:
+	// color=red
+	// application/x-www-form-urlencoded
 }
 
 func ExampleJSONMarshaler() {
@@ -198,6 +202,10 @@ func ExampleJSONMarshaler() {
 
 	fmt.Println(string(b))
 	fmt.Println(req.Header.Get(HeaderContentType))
+
+	// Output:
+	// {"color":"red"}
+	// application/json;charset=utf-8
 }
 
 func ExampleXMLMarshaler() {
@@ -211,4 +219,8 @@ func ExampleXMLMarshaler() {
 
 	fmt.Println(string(b))
 	fmt.Println(req.Header.Get(HeaderContentType))
+
+	// Output:
+	// <Resource><Color>red</Color></Resource>
+	// application/xml;charset=utf-8
 }

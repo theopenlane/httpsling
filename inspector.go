@@ -48,23 +48,31 @@ func (i *Inspector) Wrap(next Doer) Doer {
 	return DoerFunc(func(req *http.Request) (*http.Response, error) {
 		i.Request = req
 
-		if req.Body != nil {
-			reqBody, _ := io.ReadAll(req.Body)
-			req.Body.Close()
-			req.Body = io.NopCloser(bytes.NewReader(reqBody))
-			i.RequestBody = bytes.NewBuffer(reqBody)
-		}
+		req.Body = i.wrap(req.Body, true)
 
 		resp, err := next.Do(req)
 		i.Response = resp
 
-		if resp != nil && resp.Body != nil {
-			respBody, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			resp.Body = io.NopCloser(bytes.NewReader(respBody))
-			i.ResponseBody = bytes.NewBuffer(respBody)
+		if resp != nil {
+			resp.Body = i.wrap(resp.Body, false)
 		}
 
 		return resp, err
 	})
+}
+
+func (i *Inspector) wrap(body io.ReadCloser, isRequest bool) io.ReadCloser {
+	if body != nil {
+		out, _ := io.ReadAll(body)
+		body.Close()
+		body = io.NopCloser(bytes.NewReader(out))
+
+		if isRequest {
+			i.RequestBody = bytes.NewBuffer(out)
+		} else {
+			i.ResponseBody = bytes.NewBuffer(out)
+		}
+	}
+
+	return body
 }

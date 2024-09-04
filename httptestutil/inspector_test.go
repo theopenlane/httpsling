@@ -207,16 +207,6 @@ func TestInspectNilhandler(t *testing.T) {
 	require.NotNil(t, i.LastExchange())
 }
 
-func ExampleInspectorWrap() {
-	mux := http.NewServeMux()
-	// configure mux...
-
-	i := NewInspector(0)
-
-	ts := httptest.NewServer(i.Wrap(mux))
-	defer ts.Close()
-}
-
 func ExampleInspectorNextExchange() {
 	i := NewInspector(0)
 
@@ -235,6 +225,11 @@ func ExampleInspectorNextExchange() {
 	fmt.Println(i.NextExchange().RequestBody.String())
 	fmt.Println(i.NextExchange().RequestBody.String())
 	fmt.Println(i.NextExchange())
+
+	// Output:
+	// ping1
+	// ping2
+	// <nil>
 }
 
 func ExampleInspectorLastExchange() {
@@ -254,4 +249,8 @@ func ExampleInspectorLastExchange() {
 
 	fmt.Println(i.LastExchange().RequestBody.String())
 	fmt.Println(i.LastExchange())
+
+	// Output:
+	// ping2
+	// <nil>
 }
