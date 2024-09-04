@@ -26,6 +26,7 @@ steps:
               command: ["task", "go:test"]
               environment:
                 - "GOTOOLCHAIN=auto"
+        artifact_paths: ["coverage.out"]
   - group: ":closed_lock_with_key: Security Checks"
     depends_on: "go_test"
     key: "security"
