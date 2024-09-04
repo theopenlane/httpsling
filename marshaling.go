@@ -184,11 +184,9 @@ func NewContentTypeUnmarshaler() *ContentTypeUnmarshaler {
 
 func defaultUnmarshalers() map[string]Unmarshaler {
 	return map[string]Unmarshaler{
-		ContentTypeJSONUTF8: &JSONMarshaler{},
-		ContentTypeJSON:     &JSONMarshaler{},
-		ContentTypeXMLUTF8:  &XMLMarshaler{},
-		ContentTypeXML:      &XMLMarshaler{},
-		ContentTypeText:     &TextUnmarshaler{},
+		ContentTypeJSON: &JSONMarshaler{},
+		ContentTypeXML:  &XMLMarshaler{},
+		ContentTypeText: &TextUnmarshaler{},
 	}
 }
 
