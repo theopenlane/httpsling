@@ -28,7 +28,7 @@ func TestDump(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	resp, _, err := Receive(Get(ts.URL), Dump(b))
+	resp, err := Receive(Get(ts.URL), Dump(b))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestDumpToLog(t *testing.T) {
 
 	var args []interface{}
 
-	resp, _, err := Receive(Get(ts.URL), DumpToLog(func(a ...interface{}) {
+	resp, err := Receive(Get(ts.URL), DumpToLog(func(a ...interface{}) {
 		args = append(args, a...)
 	}))
 	if err != nil {
@@ -103,7 +103,7 @@ func TestDumpToStout(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	resp, _, err := Receive(Get(ts.URL), DumpToStout())
+	resp, err := Receive(Get(ts.URL), DumpToStout())
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestDumpToSterr(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	resp, _, err := Receive(Get(ts.URL), DumpToStderr())
+	resp, err := Receive(Get(ts.URL), DumpToStderr())
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -185,19 +185,21 @@ func TestExpectCode(t *testing.T) {
 	require.NoError(t, err)
 
 	// without middleware
-	resp, body, err := r.Receive(nil)
+	var out string
+
+	resp, err := r.Receive(&out)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
 	require.Equal(t, 407, resp.StatusCode)
-	require.Equal(t, "boom!", string(body))
+	require.Equal(t, "boom!", out)
 
 	// add expect option
 	r, err = r.With(ExpectCode(203))
 	require.NoError(t, err)
 
-	resp, body, err = r.Receive(nil)
+	resp, err = r.Receive(out)
 
 	// but an error should be returned too
 	require.Error(t, err)
@@ -208,16 +210,16 @@ func TestExpectCode(t *testing.T) {
 
 	// body and response should still be returned
 	assert.Equal(t, 407, resp.StatusCode)
-	assert.Equal(t, "boom!", string(body))
+	assert.Equal(t, "boom!", out)
 
 	// Using the option twice: latest option should win
-	resp, _, err = r.Receive(ExpectCode(407))
+	resp, err = r.Receive(ExpectCode(407))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
 	// original requester's expect option should be unmodified
-	resp, _, err = r.Receive(nil)
+	resp, err = r.Receive(nil)
 	// but an error should be returned too
 	require.Error(t, err)
 
@@ -229,23 +231,24 @@ func TestExpectSuccessCode(t *testing.T) {
 	bodyToReturn := "boom!"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(codeToReturn)
-		_, _ = w.Write([]byte(bodyToReturn))
+		w.Write([]byte(bodyToReturn)) // nolint: errcheck
 	}))
 
 	defer ts.Close()
 
 	// without middleware
-	resp, body, err := Receive(Get(ts.URL))
+	var out string
+	resp, err := Receive(&out, Get(ts.URL))
 	require.NoError(t, err)
 	require.Equal(t, 407, resp.StatusCode)
-	require.Equal(t, "boom!", string(body))
+	require.Equal(t, "boom!", out)
 
 	defer resp.Body.Close()
 
-	resp, body, err = Receive(Get(ts.URL), ExpectSuccessCode())
+	resp, err = Receive(out, Get(ts.URL), ExpectSuccessCode())
 	// body and response should still be returned
 	assert.Equal(t, 407, resp.StatusCode)
-	assert.Equal(t, "boom!", string(body))
+	assert.Equal(t, "boom!", out)
 	// but an error should be returned too
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "code: 407")
@@ -256,7 +259,7 @@ func TestExpectSuccessCode(t *testing.T) {
 	successCodes := []int{200, 201, 204, 278}
 	for _, code := range successCodes {
 		codeToReturn = code
-		resp, _, err := Receive(Get(ts.URL), ExpectSuccessCode())
+		resp, err := Receive(Get(ts.URL), ExpectSuccessCode())
 		require.NoError(t, err, "should not have received an error for code %v", code)
 
 		defer resp.Body.Close()
@@ -319,7 +322,7 @@ func ExampleDumpToLog() {
 }
 
 func ExampleExpectSuccessCode() {
-	resp, _, err := Receive(
+	resp, err := Receive(
 		MockDoer(400),
 		ExpectSuccessCode(),
 	)
@@ -330,7 +333,7 @@ func ExampleExpectSuccessCode() {
 }
 
 func ExampleExpectCode() {
-	resp, _, err := Receive(
+	resp, err := Receive(
 		MockDoer(400),
 		ExpectCode(201),
 	)

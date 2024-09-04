@@ -538,7 +538,7 @@ func TestUse(t *testing.T) {
 
 	r := MustNew(Use(mw, mw2), MockDoer(200))
 
-	resp, _, err := r.Receive(nil)
+	resp, err := r.Receive(nil)
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}
@@ -550,7 +550,7 @@ func TestUse(t *testing.T) {
 
 	r.MustApply(Use(mw))
 
-	resp, _, err = r.Receive(nil)
+	resp, err = r.Receive(nil)
 	if err != nil {
 		t.Errorf("error: %s", err)
 	}

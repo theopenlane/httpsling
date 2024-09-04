@@ -62,7 +62,7 @@ func TestMustNew(t *testing.T) {
 	})
 }
 
-func TestRequester_Clone(t *testing.T) {
+func TestRequesterClone(t *testing.T) {
 	cases := [][]Option{
 		{Get(), URL("http: //example.com")},
 		{URL("http://example.com")},
@@ -106,7 +106,7 @@ func TestRequester_Clone(t *testing.T) {
 	}
 }
 
-func TestRequester_Request_URLAndMethod(t *testing.T) {
+func TestRequesterRequestURLAndMethod(t *testing.T) {
 	cases := []struct {
 		options        []Option
 		expectedMethod string
@@ -152,7 +152,7 @@ func TestRequester_Request_URLAndMethod(t *testing.T) {
 	})
 }
 
-func TestRequester_Request_QueryParams(t *testing.T) {
+func TestRequesterRequestQueryParams(t *testing.T) {
 	cases := []struct {
 		options     []Option
 		expectedURL string
@@ -173,7 +173,7 @@ func TestRequester_Request_QueryParams(t *testing.T) {
 	}
 }
 
-func TestRequester_Request_Body(t *testing.T) {
+func TestRequesterRequestBody(t *testing.T) {
 	cases := []struct {
 		options             []Option
 		expectedBody        string // expected Body io.Reader as a string
@@ -219,7 +219,7 @@ func TestRequester_Request_Body(t *testing.T) {
 	}
 }
 
-func TestRequester_Request_Marshaler(t *testing.T) {
+func TestRequesterRequestMarshaler(t *testing.T) {
 	var capturedV interface{}
 
 	requester := Requester{
@@ -251,7 +251,7 @@ func TestRequester_Request_Marshaler(t *testing.T) {
 	})
 }
 
-func TestRequester_Request_ContentLength(t *testing.T) {
+func TestRequesterRequestContentLength(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
 
@@ -270,7 +270,7 @@ func TestRequester_Request_ContentLength(t *testing.T) {
 	require.EqualValues(t, 10, req.ContentLength)
 }
 
-func TestRequester_Request_GetBody(t *testing.T) {
+func TestRequesterRequestGetBody(t *testing.T) {
 	reqs, err := New(Body("1234"))
 	require.NoError(t, err)
 
@@ -303,7 +303,7 @@ func TestRequester_Request_GetBody(t *testing.T) {
 	require.Equal(t, "5678", string(bts))
 }
 
-func TestRequester_Request_Host(t *testing.T) {
+func TestRequesterRequestHost(t *testing.T) {
 	reqs, err := New(URL("http://test.com/red"))
 	require.NoError(t, err)
 
@@ -322,7 +322,7 @@ func TestRequester_Request_Host(t *testing.T) {
 	require.Equal(t, "test2.com", req.Host)
 }
 
-func TestRequester_Request_TransferEncoding(t *testing.T) {
+func TestRequesterRequestTransferEncoding(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.RequestContext(context.Background())
@@ -340,7 +340,7 @@ func TestRequester_Request_TransferEncoding(t *testing.T) {
 	require.Equal(t, reqs.TransferEncoding, req.TransferEncoding)
 }
 
-func TestRequester_Request_Close(t *testing.T) {
+func TestRequesterRequestClose(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.RequestContext(context.Background())
@@ -358,7 +358,7 @@ func TestRequester_Request_Close(t *testing.T) {
 	require.True(t, req.Close)
 }
 
-func TestRequester_Request_Trailer(t *testing.T) {
+func TestRequesterRequestTrailer(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.RequestContext(context.Background())
@@ -376,7 +376,7 @@ func TestRequester_Request_Trailer(t *testing.T) {
 	require.Equal(t, reqs.Trailer, req.Trailer)
 }
 
-func TestRequester_Request_Header(t *testing.T) {
+func TestRequesterRequestHeader(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.RequestContext(context.Background())
@@ -394,7 +394,7 @@ func TestRequester_Request_Header(t *testing.T) {
 	require.Equal(t, reqs.Header, req.Header)
 }
 
-func TestRequester_Request_Context(t *testing.T) {
+func TestRequesterRequestContext(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.RequestContext(context.WithValue(context.Background(), colorContextKey, "red"))
@@ -403,7 +403,7 @@ func TestRequester_Request_Context(t *testing.T) {
 	require.Equal(t, "red", req.Context().Value(colorContextKey))
 }
 
-func TestRequester_Request(t *testing.T) {
+func TestRequesterRequest(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.Request()
@@ -412,7 +412,7 @@ func TestRequester_Request(t *testing.T) {
 	require.NotNil(t, req)
 }
 
-func TestRequester_Request_options(t *testing.T) {
+func TestRequesterRequestOptions(t *testing.T) {
 	reqs := Requester{}
 
 	req, err := reqs.Request(Get("http://test.com/blue"))
@@ -421,7 +421,7 @@ func TestRequester_Request_options(t *testing.T) {
 	assert.Equal(t, "http://test.com/blue", req.URL.String())
 }
 
-func TestRequester_SendContext(t *testing.T) {
+func TestRequesterSendContext(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 	}))
@@ -453,7 +453,7 @@ func TestRequester_SendContext(t *testing.T) {
 	})
 }
 
-func TestRequester_Receive_withopts(t *testing.T) {
+func TestRequesterReceiveWithopts(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Write([]byte("blue")) // nolint: errcheck
 	}))
@@ -461,7 +461,7 @@ func TestRequester_Receive_withopts(t *testing.T) {
 
 	var called bool
 
-	resp, _, err := MustNew(
+	resp, err := MustNew(
 		Get(ts.URL, "/profile"),
 		UnmarshalFunc(func(data []byte, contentType string, v interface{}) error {
 			called = true
@@ -475,7 +475,7 @@ func TestRequester_Receive_withopts(t *testing.T) {
 	assert.True(t, called)
 }
 
-func TestRequester_ReceiveContext(t *testing.T) {
+func TestRequesterReceiveContext(t *testing.T) {
 	mux := http.NewServeMux()
 
 	ts := httptest.NewServer(mux)
@@ -504,7 +504,7 @@ func TestRequester_ReceiveContext(t *testing.T) {
 			t.Run(fmt.Sprintf("into=%v", c.into), func(t *testing.T) {
 				i := Inspector{}
 
-				resp, body, err := ReceiveContext(
+				resp, err := ReceiveContext(
 					context.WithValue(context.Background(), colorContextKey, "purple"),
 					c.into,
 					Get(ts.URL, "/model.json"),
@@ -515,7 +515,6 @@ func TestRequester_ReceiveContext(t *testing.T) {
 				defer resp.Body.Close()
 
 				assert.Equal(t, 206, resp.StatusCode)
-				assert.Equal(t, `{"color":"green","count":25}`, string(body))
 				assert.Equal(t, "purple", i.Request.Context().Value(colorContextKey), "context should be passed through")
 
 				if c.into != nil {
@@ -531,7 +530,7 @@ func TestRequester_ReceiveContext(t *testing.T) {
 		)
 
 		urlBefore := r.URL.String()
-		resp, body, err := r.ReceiveContext(
+		resp, err := r.ReceiveContext(
 			context.Background(),
 			Get("/err"),
 		)
@@ -540,7 +539,6 @@ func TestRequester_ReceiveContext(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, 500, resp.StatusCode)
-		assert.Equal(t, `{"color":"red","count":30}`, string(body))
 		assert.Equal(t, urlBefore, r.URL.String(), "the Get option should only affect the single request, it should not leak back into the Requester object")
 	})
 
@@ -548,13 +546,12 @@ func TestRequester_ReceiveContext(t *testing.T) {
 	t.Run("Receive", func(t *testing.T) {
 		var m testModel
 
-		resp, body, err := MustNew(Get(ts.URL, "/model.json")).Receive(&m)
+		resp, err := MustNew(Get(ts.URL, "/model.json")).Receive(&m)
 		require.NoError(t, err)
 
 		defer resp.Body.Close()
 
 		assert.Equal(t, 206, resp.StatusCode)
-		assert.Equal(t, `{"color":"green","count":25}`, string(body))
 		assert.Equal(t, "green", m.Color)
 	})
 
@@ -566,7 +563,7 @@ func TestRequester_ReceiveContext(t *testing.T) {
 		r := MustNew(Get(ts.URL, "/model.json"))
 
 		// Receive will Options to be passed as the "into" arguments
-		resp, _, err := r.Receive(Get("/blue"))
+		resp, err := r.Receive(Get("/blue"))
 		require.NoError(t, err)
 
 		defer resp.Body.Close()
@@ -574,7 +571,7 @@ func TestRequester_ReceiveContext(t *testing.T) {
 		assert.Equal(t, 208, resp.StatusCode)
 
 		// Options should be applied in the order of the arguments
-		resp, _, err = r.Receive(Get("/red"), Get("/blue"))
+		resp, err = r.Receive(Get("/red"), Get("/blue"))
 		require.NoError(t, err)
 
 		defer resp.Body.Close()
@@ -583,7 +580,7 @@ func TestRequester_ReceiveContext(t *testing.T) {
 
 		// variants
 		ctx := context.Background()
-		resp, _, err = r.ReceiveContext(ctx, Get("/blue"))
+		resp, err = r.ReceiveContext(ctx, Get("/blue"))
 		require.NoError(t, err)
 
 		defer resp.Body.Close()
@@ -592,22 +589,34 @@ func TestRequester_ReceiveContext(t *testing.T) {
 	})
 }
 
-func TestRequester_Params(t *testing.T) {
+func TestRequesterParams(t *testing.T) {
 	reqr := &Requester{}
 	reqr.Params().Set("color", "red")
 	assert.Equal(t, "red", reqr.QueryParams.Get("color"))
 }
 
-func TestRequester_Headers(t *testing.T) {
+func TestRequesterHeaders(t *testing.T) {
 	reqr := &Requester{}
 	reqr.Headers().Set("color", "red")
 	assert.Equal(t, "red", reqr.Header.Get("color"))
 }
 
-func TestRequester_Trailers(t *testing.T) {
+func TestRequesterTrailers(t *testing.T) {
 	reqr := &Requester{}
 	reqr.Trailers().Set("color", "red")
 	assert.Equal(t, "red", reqr.Trailer.Get("color"))
+}
+
+func TestRequesterHTTPClient(t *testing.T) {
+	reqr := &Requester{}
+	reqr.Doer = http.DefaultClient
+
+	client := reqr.HTTPClient()
+	assert.NotNil(t, client)
+	assert.IsType(t, http.Client{}, *client)
+
+	reqr.Doer = nil
+	assert.Nil(t, reqr.HTTPClient())
 }
 
 type TestStruct struct {
@@ -617,7 +626,7 @@ type TestStruct struct {
 	Important bool
 }
 
-func BenchmarkRequester_Receive(b *testing.B) {
+func BenchmarkRequesterReceive(b *testing.B) {
 	inputJSON := `{"color":"blue","count":10,"flavor":"vanilla","important":true}`
 
 	h := map[string][]string{"Content-Type": {"application/json"}, "Content-Length": {strconv.Itoa(len([]byte(inputJSON)))}}
@@ -635,18 +644,17 @@ func BenchmarkRequester_Receive(b *testing.B) {
 	// smoke test
 	var ts TestStruct
 
-	resp, s, err := Receive(&ts, mockServer, JSON(false), Get("/test"))
+	resp, err := Receive(&ts, mockServer, JSON(false), Get("/test"))
 	require.NoError(b, err)
 
 	defer resp.Body.Close()
 
-	require.JSONEq(b, inputJSON, string(s))
 	require.Equal(b, TestStruct{Color: "blue", Count: 10, Flavor: "vanilla", Important: true}, ts)
 
 	b.Run("simple", func(b *testing.B) {
 		b.Run("requester", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				resp, _, err := Receive(&TestStruct{}, mockServer, Get("/test"))
+				resp, err := Receive(&TestStruct{}, mockServer, Get("/test"))
 				require.NoError(b, err)
 
 				resp.Body.Close()
@@ -673,7 +681,7 @@ func BenchmarkRequester_Receive(b *testing.B) {
 	b.Run("complex", func(b *testing.B) {
 		b.Run("requester", func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				resp, _, err := Receive(&ts,
+				resp, err := Receive(&ts,
 					mockServer,
 					Get("/test/blue/green"),
 					JSON(false),
@@ -702,7 +710,7 @@ func BenchmarkRequester_Receive(b *testing.B) {
 				r.Header.Add("X-Under", "Over")
 				r.Header.Add("X-Over", "Under")
 
-				resp, _, err := r.Receive(&ts)
+				resp, err := r.Receive(&ts)
 				require.NoError(b, err)
 
 				resp.Body.Close()
@@ -740,16 +748,23 @@ func BenchmarkRequester_Receive(b *testing.B) {
 func ExampleRequester_Receive() {
 	r := MustNew(MockDoer(200,
 		Body("red"),
+		Header(HeaderContentType, ContentTypeText),
 	))
 
-	resp, body, _ := r.Receive(Get("http://api.com/resource"))
+	var out string
+	resp, _ := r.Receive(&out, Get("http://api.com/resource"))
 
 	defer resp.Body.Close()
 
-	fmt.Println(resp.StatusCode, string(body))
+	fmt.Println(resp.StatusCode)
+	fmt.Println(out)
+
+	// Output:
+	// 200
+	// red
 }
 
-func ExampleRequester_Receive_unmarshal() {
+func Example_requesterReceive() {
 	type Resource struct {
 		Color string `json:"color"`
 	}
@@ -761,13 +776,16 @@ func ExampleRequester_Receive_unmarshal() {
 
 	var resource Resource
 
-	resp, body, _ := r.Receive(&resource, Get("http://api.com/resource"))
+	resp, _ := r.Receive(&resource, Get("http://api.com/resource"))
 
 	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
-	fmt.Println(string(body))
 	fmt.Println(resource.Color)
+
+	// Output:
+	// 200
+	// red
 }
 
 func ExampleRequester_Request() {
@@ -790,6 +808,15 @@ func ExampleRequester_Request() {
 	if _, err := io.Copy(os.Stdout, req.Body); err != nil {
 		fmt.Println(err)
 	}
+
+	// Output:
+	// GET http://api.com/resource?flavor=vanilla HTTP/1.1
+	// Content-Type: application/json;charset=utf-8
+	// Accept: application/json
+	// X-Color: red
+	// {
+	//   "size": "big"
+	// }
 }
 
 func ExampleRequester_Send() {
@@ -800,4 +827,7 @@ func ExampleRequester_Send() {
 	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
+
+	// Output:
+	// 204
 }

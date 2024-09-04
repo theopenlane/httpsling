@@ -1,6 +1,7 @@
 package httpsling
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,13 +22,14 @@ func TestMockHandler(t *testing.T) {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	resp, body, err := Receive(Get(ts.URL))
+	var out map[string]interface{}
+	resp, err := Receive(&out, Get(ts.URL))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.JSONEq(t, `{"color":"blue"}`, string(body))
+	assert.Equal(t, "blue", out["color"].(string))
 	assert.Contains(t, resp.Header.Get(HeaderContentType), ContentTypeJSON)
 }
 
@@ -40,13 +42,14 @@ func TestChannelHandler(t *testing.T) {
 	in <- MockResponse(201, JSON(false), // nolint: bodyclose
 		Body(map[string]interface{}{"color": "blue"}))
 
-	resp, body, err := Receive(Get(ts.URL))
+	var out map[string]interface{}
+	resp, err := Receive(&out, Get(ts.URL))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.JSONEq(t, `{"color":"blue"}`, string(body))
+	assert.Equal(t, "blue", out["color"].(string))
 	assert.Contains(t, resp.Header.Get(HeaderContentType), ContentTypeJSON)
 }
 
@@ -131,12 +134,16 @@ func ExampleMockDoer() {
 
 	// Since DoerFunc is an Option, it can be passed directly to functions
 	// which accept Options.
-	resp, body, _ := Receive(d)
+	var out map[string]interface{}
+	resp, _ := Receive(&out, d)
+
 	defer resp.Body.Close()
+
+	j, _ := json.Marshal(out)
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(resp.Header.Get(HeaderContentType))
-	fmt.Println(string(body))
+	fmt.Printf("%s", j)
 
 	// Output:
 	// 201
@@ -153,13 +160,16 @@ func ExampleMockHandler() {
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	resp, body, _ := Receive(URL(ts.URL))
+	var out map[string]interface{}
+	resp, _ := Receive(&out, URL(ts.URL))
 
 	defer resp.Body.Close()
 
+	j, _ := json.Marshal(out)
+
 	fmt.Println(resp.StatusCode)
 	fmt.Println(resp.Header.Get(HeaderContentType))
-	fmt.Println(string(body))
+	fmt.Printf("%s", j)
 
 	// Output:
 	// 201
@@ -173,14 +183,16 @@ func ExampleChannelDoer() {
 	in <- &http.Response{
 		StatusCode: 201,
 		Body:       io.NopCloser(strings.NewReader("pong")),
+		Header:     http.Header{HeaderContentType: []string{ContentTypeText}},
 	}
 
-	resp, body, _ := Receive(d)
+	var out string
+	resp, _ := Receive(&out, d)
 
 	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
-	fmt.Println(string(body))
+	fmt.Printf("%s", out)
 
 	// Output:
 	// 201
@@ -198,12 +210,13 @@ func ExampleChannelHandler() {
 		Body:       io.NopCloser(strings.NewReader("pong")),
 	}
 
-	resp, body, _ := Receive(URL(ts.URL))
+	var out string
+	resp, _ := Receive(&out, URL(ts.URL))
 
 	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
-	fmt.Println(string(body))
+	fmt.Printf("%s", out)
 
 	// Output:
 	// 201

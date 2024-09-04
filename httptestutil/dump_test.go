@@ -2,6 +2,7 @@ package httptestutil
 
 import (
 	"bytes"
+	"fmt"
 	"net/http/httptest"
 	"testing"
 
@@ -20,13 +21,13 @@ func TestDumpToStdout(t *testing.T) {
 
 	DumpToStdout(ts)
 
-	_, _, err := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
+	_, err := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
 	require.NoError(t, err)
 }
 
 func TestDump(t *testing.T) {
 	ts := httptest.NewServer(httpsling.MockHandler(201,
-		httpsling.Body("pong"),
+		httpsling.Body(`{"ping":"pong"}`),
 		httpsling.JSON(true),
 	))
 	defer ts.Close()
@@ -34,11 +35,12 @@ func TestDump(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	Dump(ts, buf)
 
-	resp, body, err := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
+	var out map[string]string
+	resp, err := Requester(ts).Receive(&out, httpsling.Get("/test"), httpsling.Body("ping"))
 	require.NoError(t, err)
 
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.Equal(t, "pong", string(body))
+	assert.Equal(t, "pong", out["ping"])
 	require.NotEmpty(t, buf.Bytes())
 	assert.Contains(t, buf.String(), "ping")
 	assert.Contains(t, buf.String(), "pong")
@@ -46,18 +48,19 @@ func TestDump(t *testing.T) {
 
 func TestDumpToLog(t *testing.T) {
 	ts := httptest.NewServer(httpsling.MockHandler(201,
-		httpsling.Body("pong"),
+		httpsling.Body(`{"ping":"pong"}`),
 		httpsling.JSON(true),
 	))
 	defer ts.Close()
 
 	DumpToLog(ts, t.Log)
 
-	_, body, _ := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
-	require.Equal(t, "pong", string(body))
+	var out map[string]string
+	Requester(ts).Receive(&out, httpsling.Get("/test"), httpsling.Body("ping"))
+	require.Equal(t, "pong", out["ping"])
 }
 
-func TestDump_withInspect(t *testing.T) {
+func TestDumpWithInspect(t *testing.T) {
 	tests := []struct {
 		name string
 		f    func(*httptest.Server) (*bytes.Buffer, *Inspector)
@@ -78,17 +81,17 @@ func TestDump_withInspect(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ts := httptest.NewServer(httpsling.MockHandler(201,
 				httpsling.Body("pong"),
-				httpsling.JSON(true),
 			))
 			defer ts.Close()
 
 			buf, i := test.f(ts)
 
-			resp, body, err := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
+			var out string
+			resp, err := Requester(ts).Receive(&out, httpsling.Get("/test"), httpsling.Body("ping"))
 			require.NoError(t, err)
 
 			assert.Equal(t, 201, resp.StatusCode)
-			assert.Equal(t, "pong", string(body))
+			assert.Equal(t, "pong", fmt.Sprintf("%s", out))
 			require.NotEmpty(t, buf.Bytes())
 			assert.Contains(t, buf.String(), "ping")
 			assert.Contains(t, buf.String(), "pong")
@@ -102,7 +105,7 @@ func TestDump_withInspect(t *testing.T) {
 	}
 }
 
-func TestDumpTo_nilhandler(t *testing.T) {
+func TestDumpToNilhandler(t *testing.T) {
 	ts := httptest.NewServer(nil)
 	defer ts.Close()
 
@@ -110,7 +113,7 @@ func TestDumpTo_nilhandler(t *testing.T) {
 
 	ts.Config.Handler = DumpTo(ts.Config.Handler, &buf)
 
-	_, _, err := Requester(ts).Receive(nil)
+	_, err := Requester(ts).Receive(nil)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, buf)

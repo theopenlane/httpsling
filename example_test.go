@@ -20,12 +20,14 @@ func Example() {
 	}))
 	defer s.Close()
 
-	resp, body, _ := Receive(
+	var out map[string]string
+	resp, _ := Receive(
+		out,
 		Get(s.URL),
 	)
 
 	fmt.Println(resp.StatusCode)
-	fmt.Println(string(body))
+	fmt.Printf("%s", out)
 }
 
 func Example_receive() {
@@ -83,7 +85,7 @@ func Example_everything() {
 
 	var resource Resource
 
-	resp, body, err := r.Receive(&resource)
+	resp, err := r.Receive(&resource)
 	if err != nil {
 		panic(err)
 	}
@@ -100,6 +102,5 @@ func Example_everything() {
 	fmt.Println("client-side response body:", clientInspector.ResponseBody.String())
 
 	fmt.Println("response status code:", resp.StatusCode)
-	fmt.Println("raw response body:", string(body))
 	fmt.Println("unmarshaled response body:", resource)
 }

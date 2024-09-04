@@ -27,7 +27,7 @@ func TestInspector(t *testing.T) {
 
 	i := Inspector{}
 
-	resp, body, err := Receive(&i, doer, Body("ping"))
+	resp, err := Receive(&i, doer, Body("ping"))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -35,21 +35,17 @@ func TestInspector(t *testing.T) {
 
 	defer resp.Body.Close()
 
-	assert.Equal(t, 201, resp.StatusCode)
-	assert.Equal(t, "pong", string(body))
-
+	require.Equal(t, 201, resp.StatusCode)
 	require.NotNil(t, i.Request)
 
 	assert.Equal(t, "ping", i.RequestBody.String())
 	assert.Equal(t, "ping", string(dumpedReqBody))
 
 	require.NotNil(t, i.Response)
-	assert.Equal(t, 201, i.Response.StatusCode)
-
 	assert.Equal(t, "pong", i.ResponseBody.String())
 }
 
-func TestInspector_Clear(t *testing.T) {
+func TestInspectorClear(t *testing.T) {
 	i := Inspector{
 		Request:      &http.Request{},
 		Response:     &http.Response{},
@@ -74,7 +70,7 @@ func TestInspect(t *testing.T) {
 
 	i := Inspect(r)
 
-	resp, _, err := r.Receive(MockDoer(201))
+	resp, err := r.Receive(MockDoer(201))
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -94,7 +90,7 @@ func ExampleInspect() {
 
 	i := Inspect(r)
 
-	resp, _, err := r.Receive(nil)
+	resp, err := r.Receive(nil)
 	if err != nil {
 		fmt.Println(err)
 		return

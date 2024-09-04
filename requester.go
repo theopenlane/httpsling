@@ -248,12 +248,12 @@ func (r *Requester) Do(req *http.Request) (*http.Response, error) {
 }
 
 // Receive creates a new HTTP request and returns the response
-func (r *Requester) Receive(into interface{}, opts ...Option) (resp *http.Response, body []byte, err error) {
+func (r *Requester) Receive(into interface{}, opts ...Option) (resp *http.Response, err error) {
 	return r.ReceiveContext(context.Background(), into, opts...)
 }
 
 // ReceiveContext does the same as Receive, but requires a context
-func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts ...Option) (resp *http.Response, body []byte, err error) {
+func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts ...Option) (resp *http.Response, err error) {
 	if opt, ok := into.(Option); ok {
 		opts = append(opts, nil)
 		copy(opts[1:], opts)
@@ -263,7 +263,7 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 
 	r, err = r.withOpts(opts...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	resp, err = r.SendContext(ctx)
@@ -271,11 +271,11 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 	body, bodyReadError := readBody(resp)
 
 	if err != nil {
-		return resp, body, err
+		return resp, err
 	}
 
 	if bodyReadError != nil {
-		return resp, body, bodyReadError
+		return resp, bodyReadError
 	}
 
 	if into != nil {
@@ -287,7 +287,7 @@ func (r *Requester) ReceiveContext(ctx context.Context, into interface{}, opts .
 		err = unmarshaler.Unmarshal(body, resp.Header.Get(HeaderContentType), into)
 	}
 
-	return resp, body, err
+	return resp, err
 }
 
 func readBody(resp *http.Response) ([]byte, error) {
@@ -342,4 +342,14 @@ func (r *Requester) Trailers() http.Header {
 	}
 
 	return r.Trailer
+}
+
+// HTTPClient returns the HTTP client used by the Requester
+func (r *Requester) HTTPClient() *http.Client {
+	client, ok := r.Doer.(*http.Client)
+	if !ok {
+		return nil
+	}
+
+	return client
 }

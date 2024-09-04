@@ -242,7 +242,7 @@ func TestAllRetryers(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
-	s := httptest.NewServer(MockHandler(500))
+	s := httptest.NewServer(MockHandler(500, Header(HeaderContentType, ContentTypeText)))
 	defer s.Close()
 
 	r := httptestutil.Requester(s, Retry(&RetryConfig{
@@ -258,8 +258,9 @@ func TestRetry(t *testing.T) {
 	i := httptestutil.Inspect(s)
 
 	var (
-		resp *http.Response
 		err  error
+		out  string
+		resp *http.Response
 	)
 
 	t0 := time.Now()
@@ -268,7 +269,7 @@ func TestRetry(t *testing.T) {
 	go func() {
 		// spawn a go routine to call the client.  this will block until all the retries
 		// finish.
-		resp, _, err = r.Receive(nil) // nolint: bodyclose
+		resp, err = r.Receive(&out) // nolint: bodyclose
 
 		// capture the response, and send a signal that the client finished.
 		done <- true
@@ -305,7 +306,7 @@ loop:
 
 	defer resp.Body.Close()
 
-	if assert.NotNil(t, resp) {
+	if assert.NotNil(t, out) {
 		assert.Equal(t, 500, resp.StatusCode)
 	}
 
@@ -319,7 +320,7 @@ loop:
 	assert.InDelta(t, 200*time.Millisecond, waits[2], float64(10*time.Millisecond))
 }
 
-func TestRetry_post(t *testing.T) {
+func TestRetryPost(t *testing.T) {
 	s := httptest.NewServer(MockHandler(500))
 	defer s.Close()
 
@@ -357,7 +358,7 @@ func TestRetry_post(t *testing.T) {
 
 	// most body types will be automatically wrapped with an appropriate GetBody function, so they can
 	// be correctly replayed.
-	resp, _, err := r.Receive(Post(), Body("fudge"))
+	resp, err := r.Receive(Post(), Body("fudge"))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -367,7 +368,7 @@ func TestRetry_post(t *testing.T) {
 
 	// This type of body can't be converted, so the request's GetBody function will be nil.
 	// This will not be retried.
-	resp, _, err = r.Receive(Post(), Body(&dummyReader{next: strings.NewReader("fudge")}))
+	resp, err = r.Receive(Post(), Body(&dummyReader{next: strings.NewReader("fudge")}))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -378,7 +379,7 @@ func TestRetry_post(t *testing.T) {
 	// http.NoBody is a special case.  It's a non-nil sentinel value indicating the request has
 	// no body.  We should be able to retry this, even though GetBody will be nil.
 	expectBody = false
-	resp, _, err = r.Receive(Post(), Body(http.NoBody))
+	resp, err = r.Receive(Post(), Body(http.NoBody))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -395,7 +396,7 @@ func (d *dummyReader) Read(p []byte) (n int, err error) {
 	return d.next.Read(p)
 }
 
-func TestRetry_respDrained(t *testing.T) {
+func TestRetryRespDrained(t *testing.T) {
 	// when retrying a request, the response body of the last attempt must be
 	// fully drained first, or there will be a leak.
 	s := httptest.NewServer(MockHandler(500, Body("fudge")))
@@ -415,13 +416,14 @@ func TestRetry_respDrained(t *testing.T) {
 		})
 	}))
 
-	resp, body, err := r.Receive(nil)
+	var out string
+	resp, err := r.Receive(&out)
 	assert.NoError(t, err)
 
 	defer resp.Body.Close()
 
 	assert.Equal(t, 4, len(responses))
-	assert.Equal(t, "fudge", string(body))
+	assert.Equal(t, "fudge", out)
 
 	// all the response bodies should have been drained
 	for i, resp := range responses {
@@ -435,7 +437,7 @@ func TestRetry_respDrained(t *testing.T) {
 	}
 }
 
-func TestRetry_cancelContext(t *testing.T) {
+func TestRetryCancelContext(t *testing.T) {
 	// context cancellation can be used to abort retries
 	s := httptest.NewServer(MockHandler(500, Body("fudge")))
 	defer s.Close()
@@ -452,7 +454,7 @@ func TestRetry_cancelContext(t *testing.T) {
 	done := make(chan bool)
 
 	go func() {
-		_, _, err = r.ReceiveContext(ctx, nil) // nolint: bodyclose
+		_, err = r.ReceiveContext(ctx, nil) // nolint: bodyclose
 
 		done <- true
 	}()
@@ -468,7 +470,7 @@ func TestRetry_cancelContext(t *testing.T) {
 	require.ErrorIs(t, err, context.Canceled)
 }
 
-func TestRetry_shouldRetry(t *testing.T) {
+func TestRetryShouldRetry(t *testing.T) {
 	// test a custom ShouldRetry function.  also test that Retry calls the ShouldRetry function
 	// with the right args.
 	var srvCount int
@@ -501,7 +503,7 @@ func TestRetry_shouldRetry(t *testing.T) {
 		}),
 	}))
 
-	resp, _, err := r.Receive(nil)
+	resp, err := r.Receive(nil)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -524,7 +526,7 @@ func TestRetry_shouldRetry(t *testing.T) {
 	}
 }
 
-func TestRetry_success(t *testing.T) {
+func TestRetrySuccess(t *testing.T) {
 	// if request succeeds, no retries
 	s := httptest.NewServer(MockHandler(200, Body("fudge")))
 	defer s.Close()
@@ -533,12 +535,14 @@ func TestRetry_success(t *testing.T) {
 
 	i := httptestutil.Inspect(s)
 
-	resp, body, err := r.Receive(nil)
+	var out string
+
+	resp, err := r.Receive(&out)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
-	assert.Equal(t, "fudge", string(body))
+	assert.Equal(t, "fudge", out)
 	assert.Equal(t, 200, resp.StatusCode)
 
 	// it should not have retried, since the first attempt was a success
@@ -565,7 +569,7 @@ func (r *poisonedReader) Read(p []byte) (n int, err error) {
 	}
 }
 
-func TestRetry_readResponse(t *testing.T) {
+func TestRetryReadResponse(t *testing.T) {
 	// optionally, Retry can retry the request if an error occurs in the middle
 	// of reading the response body.  This is accomplished by having Retry
 	// read the entire response body into memory in the middleware.  This is not
@@ -594,7 +598,9 @@ func TestRetry_readResponse(t *testing.T) {
 				// it with a fake Doer.  https://groups.google.com/g/golang-nuts/c/AtxmEDJ4zvc
 				if count > 2 {
 					// on the third attempt, just return a valid response
-					return MockResponse(200, Body("fudge")), nil
+					return MockResponse(200,
+						Body("fudge"),
+						Header(HeaderContentType, ContentTypeText)), nil
 				}
 
 				// return a response with a poisoned response body will will thrown an error after
@@ -615,7 +621,7 @@ func TestRetry_readResponse(t *testing.T) {
 
 	// without setting flag, it should fail after the first attempt.
 	// it will not be retried
-	resp, _, err := r.Receive(nil)
+	resp, err := r.Receive(nil)
 	assert.ErrorIs(t, err, syscall.ECONNRESET)
 	assert.Equal(t, 1, count)
 
@@ -626,12 +632,14 @@ func TestRetry_readResponse(t *testing.T) {
 	retryConfig.ReadResponse = true
 	r = newRequester()
 
-	resp, body, err := r.Receive(nil)
+	var out string
+
+	resp, err = r.Receive(&out)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
-	assert.Equal(t, "fudge", string(body))
+	assert.Equal(t, "fudge", out)
 	assert.Equal(t, 200, resp.StatusCode)
 
 	// should have taken 3 tries

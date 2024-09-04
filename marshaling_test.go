@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestJSONMarshaler_Marshal(t *testing.T) {
+func TestJSONMarshalerMarshal(t *testing.T) {
 	m := JSONMarshaler{}
 
 	v := map[string]interface{}{"color": "red"}
@@ -33,7 +33,7 @@ func TestJSONMarshaler_Marshal(t *testing.T) {
 	require.Equal(t, expectedIndented, data)
 }
 
-func TestJSONMarshaler_Unmarshal(t *testing.T) {
+func TestJSONMarshalerUnmarshal(t *testing.T) {
 	m := JSONMarshaler{}
 	d := []byte(`{"color":"red"}`)
 
@@ -50,7 +50,7 @@ type testModel struct {
 	Count int    `xml:"count" json:"count" url:"count"`
 }
 
-func TestXMLMarshaler_Marshal(t *testing.T) {
+func TestXMLMarshalerMarshal(t *testing.T) {
 	m := XMLMarshaler{}
 
 	b, ct, err := m.Marshal(testModel{"red", 30})
@@ -70,7 +70,7 @@ func TestXMLMarshaler_Marshal(t *testing.T) {
 </testModel>`, string(b))
 }
 
-func TestXMLMarshaler_Unmarshal(t *testing.T) {
+func TestXMLMarshalerUnmarshal(t *testing.T) {
 	m := XMLMarshaler{}
 
 	data := []byte(`<testModel><color>red</color><count>30</count></testModel>`)
@@ -83,50 +83,7 @@ func TestXMLMarshaler_Unmarshal(t *testing.T) {
 	assert.Equal(t, testModel{"red", 30}, v)
 }
 
-func TestMultiUnmarshaler_Unmarshal(t *testing.T) {
-	m := MultiUnmarshaler{}
-
-	cases := []struct {
-		input       string
-		contentType string
-	}{
-		{
-			input:       `<testModel><color>red</color><count>30</count></testModel>`,
-			contentType: `application/xml`,
-		},
-		{
-			input:       `{"color":"red","count":30}`,
-			contentType: `application/json`,
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.contentType, func(t *testing.T) {
-			var v testModel
-
-			err := m.Unmarshal([]byte(c.input), c.contentType, &v)
-			require.NoError(t, err)
-
-			require.Equal(t, testModel{"red", 30}, v)
-		})
-	}
-
-	t.Run("unknown", func(t *testing.T) {
-		err := m.Unmarshal([]byte(`{"color":"red","count":30}`), "asdf", &testModel{})
-		require.Error(t, err)
-	})
-}
-
-func TestMultiUnmarshaler_Apply(t *testing.T) {
-	r := MustNew()
-	r.Marshaler = nil
-
-	m := &MultiUnmarshaler{}
-	r.MustApply(m)
-
-	assert.Equal(t, m, r.Unmarshaler)
-}
-
-func TestContentTypeUnmarshaler_Unmarshal(t *testing.T) {
+func TestContentTypeUnmarshalerUnmarshal(t *testing.T) {
 	m := NewContentTypeUnmarshaler()
 	m.Unmarshalers["another/thing"] = &JSONMarshaler{}
 
@@ -173,7 +130,7 @@ func TestContentTypeUnmarshaler_Unmarshal(t *testing.T) {
 	})
 }
 
-func TestContentTypeUnmarshaler_Apply(t *testing.T) {
+func TestContentTypeUnmarshalerApply(t *testing.T) {
 	r := MustNew()
 	r.Marshaler = nil
 
@@ -183,7 +140,7 @@ func TestContentTypeUnmarshaler_Apply(t *testing.T) {
 	assert.Equal(t, m, r.Unmarshaler)
 }
 
-func TestFormMarshaler_Marshal(t *testing.T) {
+func TestFormMarshalerMarshal(t *testing.T) {
 	testCases := []struct {
 		input  interface{}
 		output string
@@ -216,7 +173,7 @@ func TestFormMarshaler_Marshal(t *testing.T) {
 	}
 }
 
-func TestMarshalFunc_Apply(t *testing.T) {
+func TestMarshalFuncApply(t *testing.T) {
 	var mf MarshalFunc = func(v interface{}) (bytes []byte, s string, e error) {
 		return nil, "red", nil
 	}

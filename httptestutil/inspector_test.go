@@ -49,11 +49,12 @@ func TestInspector(t *testing.T) {
 
 	is := Inspect(ts)
 
-	resp, body, err := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
+	var out string
+	resp, err := Requester(ts).Receive(&out, httpsling.Get("/test"), httpsling.Body("ping"))
 	require.NoError(t, err)
 
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.Equal(t, "pong", string(body))
+	assert.Equal(t, "pong", out)
 
 	ex := is.LastExchange()
 	require.NotNil(t, ex)
@@ -63,7 +64,7 @@ func TestInspector(t *testing.T) {
 	assert.Equal(t, "pong", ex.ResponseBody.String())
 }
 
-func TestInspector_NextExchange(t *testing.T) {
+func TestInspectorNextExchange(t *testing.T) {
 	var count int
 
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -95,7 +96,7 @@ func TestInspector_NextExchange(t *testing.T) {
 	assert.Equal(t, "pong2", exchanges[2].ResponseBody.String())
 }
 
-func TestInspector_LastExchange(t *testing.T) {
+func TestInspectorLastExchange(t *testing.T) {
 	ts := httptest.NewServer(nil)
 	defer ts.Close()
 
@@ -120,7 +121,7 @@ func TestInspector_LastExchange(t *testing.T) {
 	require.Nil(t, is.LastExchange())
 }
 
-func TestInspector_Drain(t *testing.T) {
+func TestInspectorDrain(t *testing.T) {
 	ts := httptest.NewServer(nil)
 	defer ts.Close()
 
@@ -144,7 +145,7 @@ func TestInspector_Drain(t *testing.T) {
 	require.Nil(t, is.LastExchange())
 }
 
-func TestInspector_Clear(t *testing.T) {
+func TestInspectorClear(t *testing.T) {
 	ts := httptest.NewServer(nil)
 	defer ts.Close()
 
@@ -175,10 +176,10 @@ func TestInspector_Clear(t *testing.T) {
 	})
 }
 
-func TestInspector_readFrom(t *testing.T) {
+func TestInspectorReadFrom(t *testing.T) {
 	// fixed a bug in the hook func's ReadFrom hook.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(httpsling.HeaderContentType, httpsling.ContentTypeJSON)
+		w.Header().Set(httpsling.HeaderContentType, httpsling.ContentTypeTextUTF8)
 		w.WriteHeader(201)
 		readerFrom := w.(io.ReaderFrom)
 		readerFrom.ReadFrom(strings.NewReader("pong"))
@@ -188,24 +189,25 @@ func TestInspector_readFrom(t *testing.T) {
 
 	i := Inspect(ts)
 
-	_, body, _ := Requester(ts).Receive(httpsling.Get("/test"), httpsling.Body("ping"))
-	assert.Equal(t, "pongkilroy", string(body))
+	var out string
+	Requester(ts).Receive(&out, httpsling.Get("/test"), httpsling.Body("ping"))
+	assert.Equal(t, "pongkilroy", out)
 	assert.Equal(t, "pongkilroy", i.LastExchange().ResponseBody.String())
 }
 
-func TestInspect_nilhandler(t *testing.T) {
+func TestInspectNilhandler(t *testing.T) {
 	ts := httptest.NewServer(nil)
 	defer ts.Close()
 
 	i := Inspect(ts)
 
-	_, _, err := Requester(ts).Receive(nil)
+	_, err := Requester(ts).Receive(nil)
 	require.NoError(t, err)
 
 	require.NotNil(t, i.LastExchange())
 }
 
-func ExampleInspector_Wrap() {
+func ExampleInspectorWrap() {
 	mux := http.NewServeMux()
 	// configure mux...
 
@@ -215,7 +217,7 @@ func ExampleInspector_Wrap() {
 	defer ts.Close()
 }
 
-func ExampleInspector_NextExchange() {
+func ExampleInspectorNextExchange() {
 	i := NewInspector(0)
 
 	var h http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -235,7 +237,7 @@ func ExampleInspector_NextExchange() {
 	fmt.Println(i.NextExchange())
 }
 
-func ExampleInspector_LastExchange() {
+func ExampleInspectorLastExchange() {
 	i := NewInspector(0)
 
 	var h http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

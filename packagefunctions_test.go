@@ -68,12 +68,11 @@ func TestReceive(t *testing.T) {
 	doer := MockDoer(205, Body(`{"count":25}`), JSON(false))
 
 	var m testModel
-	resp, body, err := Receive(&m, Get("/red"), WithDoer(doer), &i)
+	resp, err := Receive(&m, Get("/red"), WithDoer(doer), &i)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
-	assert.Equal(t, `{"count":25}`, string(body))
 	assert.Equal(t, 205, resp.StatusCode)
 	assert.Equal(t, "/red", i.Request.URL.Path)
 	assert.Equal(t, 25, m.Count)
@@ -83,7 +82,7 @@ func TestReceive(t *testing.T) {
 
 		i := Inspector{}
 
-		resp, body, err := ReceiveContext(
+		resp, err := ReceiveContext(
 			context.WithValue(context.Background(), colorContextKey, "yellow"),
 			&m,
 			Get("/red"),
@@ -94,51 +93,11 @@ func TestReceive(t *testing.T) {
 
 		defer resp.Body.Close()
 
-		assert.Equal(t, `{"count":25}`, string(body))
 		assert.Equal(t, 205, resp.StatusCode)
 		assert.Equal(t, 25, m.Count)
 		assert.Equal(t, "yellow", i.Request.Context().Value(colorContextKey))
 		assert.Equal(t, "/red", i.Request.URL.Path)
 	})
-}
-
-func ExampleReceive() {
-	resp, body, err := Receive(Get("http://api.com/resource"))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer resp.Body.Close()
-
-	fmt.Println(resp.StatusCode, string(body), err)
-}
-
-func ExampleReceive_unmarshal() {
-	type Resource struct {
-		Color string `json:"color"`
-	}
-
-	var r Resource
-
-	resp, body, err := Receive(&r, Get("http://api.com/resource"))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer resp.Body.Close()
-
-	fmt.Println(resp.StatusCode, string(body), err)
-}
-
-func ExampleSend() {
-	resp, err := Send(Get("http://api.com/resource"))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer resp.Body.Close()
-
-	fmt.Println(resp.StatusCode, err)
 }
 
 func ExampleRequest() {

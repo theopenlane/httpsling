@@ -108,6 +108,31 @@ func (m *XMLMarshaler) Apply(r *Requester) error {
 	return nil
 }
 
+// TextUnmarshaler implements Marshaler and Unmarshaler
+type TextUnmarshaler struct {
+	Indent bool
+}
+
+// Unmarshal implements Unmarshaler
+func (*TextUnmarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
+	*(v.(*string)) = string(data)
+
+	return nil
+}
+
+// Marshal implements Marshaler
+func (m *TextUnmarshaler) Marshal(v interface{}) (data []byte, contentType string, err error) {
+	data = []byte(fmt.Sprintf("%v", v))
+
+	return data, ContentTypeTextUTF8, nil
+}
+
+// Apply implements Option
+func (m *TextUnmarshaler) Apply(r *Requester) error {
+	r.Marshaler = m
+	return nil
+}
+
 // FormMarshaler implements Marshaler
 type FormMarshaler struct{}
 
@@ -163,6 +188,7 @@ func defaultUnmarshalers() map[string]Unmarshaler {
 		ContentTypeJSON:     &JSONMarshaler{},
 		ContentTypeXMLUTF8:  &XMLMarshaler{},
 		ContentTypeXML:      &XMLMarshaler{},
+		ContentTypeText:     &TextUnmarshaler{},
 	}
 }
 
@@ -209,6 +235,3 @@ func generalMediaType(s string) string {
 
 	return ""
 }
-
-// MultiUnmarshaler is a legacy alias for ContentTypeUnmarshaler
-type MultiUnmarshaler = ContentTypeUnmarshaler
