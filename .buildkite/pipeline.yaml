@@ -3,29 +3,29 @@ env:
   IMAGE_REPO: ghcr.io/theopenlane/${APP_NAME}
   SONAR_HOST: "https://sonarcloud.io"
 steps:
-  - group: ":test_tube: tests"
+  - group: ":test_tube: Tests"
     key: "tests"
     steps:
       - label: ":golangci-lint: lint :lint-roller:"
-        cancel_on_build_failing: true
         key: "lint"
+        cancel_on_build_failing: true
         plugins:
           - docker#v5.11.0:
-              image: "registry.hub.docker.com/golangci/golangci-lint:v1.60.3"
-              command: ["golangci-lint", "run", "-v", "--timeout", "10m", "--config", ".golangci.yaml", "--concurrency", "0"]
+              image: "ghcr.io/theopenlane/build-image:latest"
+              always-pull: true
+              command: ["task", "go:lint"]
               environment:
                 - "GOTOOLCHAIN=auto"
       - label: ":golang: go test"
         key: "go_test"
-        retry:
-          automatic:
-            - exit_status: "*"
-              limit: 2
         cancel_on_build_failing: true
         plugins:
           - docker#v5.11.0:
-              image: golang:1.23.0
-              command: ["go", "test", "-coverprofile=coverage.out", "./..."]
+              image: "ghcr.io/theopenlane/build-image:latest"
+              always-pull: true
+              command: ["task", "go:test:cover"]
+              environment:
+                - "GOTOOLCHAIN=auto"
         artifact_paths: ["coverage.out"]
   - group: ":closed_lock_with_key: Security Checks"
     depends_on: "go_test"
@@ -37,6 +37,7 @@ steps:
           - docker#v5.11.0:
               image: "registry.hub.docker.com/securego/gosec:2.20.0"
               command: ["-no-fail", "-exclude-generated", "-fmt sonarqube", "-out", "results.txt", "./..."]
+              always-pull: true
               environment:
                 - "GOTOOLCHAIN=auto"
         artifact_paths: ["results.txt"]
@@ -51,7 +52,7 @@ steps:
               download: "coverage.out"
               step: "go_test"
           - docker#v5.11.0:
-              image: "sonarsource/sonar-scanner-cli:5"
+              image: "sonarsource/sonar-scanner-cli:11"
               environment:
                 - "SONAR_TOKEN"
                 - "SONAR_HOST_URL=$SONAR_HOST"
@@ -67,7 +68,7 @@ steps:
               download: coverage.out
               step: "go_test"
           - docker#v5.11.0:
-              image: "sonarsource/sonar-scanner-cli:5"
+              image: "sonarsource/sonar-scanner-cli:11"
               environment:
                 - "SONAR_TOKEN"
                 - "SONAR_HOST_URL=$SONAR_HOST"

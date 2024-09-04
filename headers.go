@@ -7,6 +7,9 @@ const (
 	HeaderProxyAuthorization = "Proxy-Authorization"
 	HeaderWWWAuthenticate    = "WWW-Authenticate"
 
+	BearerAuthHeader = "Bearer "
+	BasicAuthHeader  = "Basic "
+
 	// Caching
 	HeaderAge           = "Age"
 	HeaderCacheControl  = "Cache-Control"
@@ -88,6 +91,7 @@ const (
 	ContentTypeYAML                   = "application/yaml" // https://www.rfc-editor.org/rfc/rfc9512.html
 	ContentTypeYAMLUTF8               = "application/yaml;charset=utf-8"
 	ContentTypeText                   = "text/plain"
+	ContentTypeTextUTF8               = "text/plain;charset=utf-8"
 	ContentTypeApplicationOctetStream = "application/octet-stream"
 
 	// Proxies
