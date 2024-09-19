@@ -39,5 +39,5 @@ issues:
   exclude-use-default: true
   exclude-dirs:
     - httptestutil/*
-  exclude-files: 
+  exclude-files:
     - example_test.go
