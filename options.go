@@ -419,3 +419,36 @@ func WithDoer(d Doer) Option {
 		return nil
 	})
 }
+
+func WithMaxFileSize(i int64) Option {
+	return OptionFunc(func(r *Requester) error {
+		r.MaxFileSize = i
+
+		return nil
+	})
+}
+
+func WithValidationFunc(validationFunc ValidationFunc) Option {
+	return OptionFunc(func(r *Requester) error {
+		r.validationFunc = validationFunc
+
+		return nil
+	})
+}
+
+// WithNameFuncGenerator allows you configure how you'd like to rename your uploaded files
+func WithNameFuncGenerator(nameFunc NameGeneratorFunc) Option {
+	return OptionFunc(func(r *Requester) error {
+		r.fileNameFuncGenerator = nameFunc
+
+		return nil
+	})
+}
+
+func WithFileErrorResponseHandler(errHandler ErrResponseHandler) Option {
+	return OptionFunc(func(r *Requester) error {
+		r.fileUploaderrorResponseHandler = errHandler
+
+		return nil
+	})
+}
