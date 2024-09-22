@@ -44,6 +44,14 @@ type Requester struct {
 	Middleware []Middleware
 	// Unmarshaler will be used by the Receive methods to unmarshal the response body
 	Unmarshaler Unmarshaler
+	// MaxFileSize is the maximum size of a file to download
+	MaxFileSize int64
+	// ValidationFunc is a function that can be used to validate the response
+	validationFunc ValidationFunc
+	// NameGeneratorFunc is a function that can be used to generate a name (added for files but could be used for other things)
+	fileNameFuncGenerator NameGeneratorFunc
+	// errorResponseHandler is a function that can be used to handle errors when a file upload fails
+	fileUploaderrorResponseHandler ErrResponseHandler
 }
 
 // New returns a new Requester, applying all options
