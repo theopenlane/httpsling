@@ -12,14 +12,6 @@ tasks:
     cmds:
       - golangci-lint run --config=.golangci.yaml --verbose --fast --fix
 
-  go:test:
-    desc: runs and outputs results of created go tests
-    aliases: ['go:test:psql', 'test:psql']
-    env:
-      TEST_DB_URL: "docker://postgres:16-alpine"
-    cmds:
-      - go test -v ./...
-
   go:fmt:
     desc: format all go code
     cmds:
