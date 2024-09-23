@@ -7,11 +7,11 @@
 
 # Slinging HTTP
 
-The `httpsling` library simplifies the way you make HTTP httpsling. It's intended to provide an easy-to-use interface for sending requests and handling responses, reducing the boilerplate code typically associated with the `net/http` package.
+The `httpsling` library simplifies the way you make HTTP requests. It's intended to provide an easy-to-use interface for sending requests and handling responses, reducing the boilerplate code typically associated with the `net/http` package.
 
 ## Overview
 
-Creating a new `Requestor` and making a request should be straightforward:
+Creating a new `Requester` and making a request should be straightforward:
 
 ```go
 package main
@@ -114,7 +114,7 @@ Custom TLS configurations can be applied for enhanced security measures, such as
 
 ## Requests
 
-The library provides a `Receive` to construct and dispatch HTTP httpsling. Here are examples of performing various types of requests, including adding query parameters, setting headers, and attaching a body to your httpsling.
+The library provides a `Receive` to construct and dispatch HTTP. Here are examples of performing various types of requests, including adding query parameters, setting headers, and attaching a body to your requests.
 
 #### GET Request
 
@@ -208,4 +208,6 @@ This library was inspired by and built upon the work of several other HTTP clien
 - [Go-resty/resty](https://github.com/go-resty/resty)
 - [Fiber Client](https://github.com/gofiber/fiber)
 
-Props to dghubble for a great name with `sling`, which was totally ripped off to make `httpsling` <3. I chose not to use any of these directly because I wanted to have layers of control we may need within our services echosystem.
+## Contributing
+
+See [contributing](.github/CONTRIBUTING.md) for details.
