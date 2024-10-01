@@ -15,8 +15,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/theopenlane/echox v0.2.0 h1:s9DJJrsLOSPsXVfgmQxgXmSVtxzztBnSmcVX4ax7tIM=
 github.com/theopenlane/echox v0.2.0/go.mod h1:nfxwQpwvqYYI/pFHJKDs3/HLvjYKEGCih4XDgLSma64=
-github.com/theopenlane/utils v0.2.1 h1:T6VfvOQDcAXBa1NFVL4QCsCbHvVQkp6Tl4hGJVd7TwQ=
-github.com/theopenlane/utils v0.2.1/go.mod h1:ydEtwhmEvkVt3KKmNqiQiSY5b3rKH7U4umZ3QbFDsxU=
+github.com/theopenlane/utils v0.3.0 h1:wLduNgi065CeRu4RvRG5p1Sz8H5S+KDiwSdSQ/Jc9Kg=
+github.com/theopenlane/utils v0.3.0/go.mod h1:ydEtwhmEvkVt3KKmNqiQiSY5b3rKH7U4umZ3QbFDsxU=
 go.uber.org/mock v0.4.0 h1:VcM4ZOtdbR4f6VXfiOpwpVJDL6lCReaZ6mw31wqh7KU=
 go.uber.org/mock v0.4.0/go.mod h1:a6FSlNadKUHUa9IP5Vyt1zh4fC7uAwxMutEAscFbkZc=
 golang.org/x/mod v0.11.0 h1:bUO06HqtnRcc/7l71XBe4WcqTZ+3AH1J59zWDDwLKgU=
