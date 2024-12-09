@@ -6,14 +6,14 @@ require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/google/go-querystring v1.1.0
 	github.com/stretchr/testify v1.10.0
-	github.com/theopenlane/utils v0.4.0
+	github.com/theopenlane/utils v0.4.2
 
 )
 
 require (
 	go.uber.org/mock v0.4.0 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 )
 
