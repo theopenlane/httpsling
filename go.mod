@@ -11,16 +11,15 @@ require (
 )
 
 require (
-	go.uber.org/mock v0.4.0 // indirect
-	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	go.uber.org/mock v0.5.0 // indirect
+	golang.org/x/mod v0.18.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/tools v0.22.0 // indirect
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/mazrean/formstream v1.1.1
+	github.com/mazrean/formstream v1.1.2
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/theopenlane/echox v0.2.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
