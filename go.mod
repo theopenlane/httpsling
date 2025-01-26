@@ -1,12 +1,12 @@
 module github.com/theopenlane/httpsling
 
-go 1.23.3
+go 1.23.5
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/google/go-querystring v1.1.0
 	github.com/stretchr/testify v1.10.0
-	github.com/theopenlane/utils v0.4.2
+	github.com/theopenlane/utils v0.4.3
 
 )
 
@@ -21,6 +21,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/mazrean/formstream v1.1.2
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/theopenlane/echox v0.2.0
+	github.com/theopenlane/echox v0.2.1
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
