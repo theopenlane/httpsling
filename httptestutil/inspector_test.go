@@ -207,7 +207,7 @@ func TestInspectNilhandler(t *testing.T) {
 	require.NotNil(t, i.LastExchange())
 }
 
-func ExampleInspectorNextExchange() {
+func ExampleInspector_NextExchange() {
 	i := NewInspector(0)
 
 	var h http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -232,7 +232,7 @@ func ExampleInspectorNextExchange() {
 	// <nil>
 }
 
-func ExampleInspectorLastExchange() {
+func ExampleInspector_LastExchange() {
 	i := NewInspector(0)
 
 	var h http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
