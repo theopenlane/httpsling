@@ -6,7 +6,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/google/go-querystring v1.1.0
 	github.com/stretchr/testify v1.10.0
-	github.com/theopenlane/utils v0.4.3
+	github.com/theopenlane/utils v0.4.4
 
 )
 
