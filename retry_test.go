@@ -14,20 +14,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/theopenlane/httpsling"
+	"github.com/theopenlane/httpsling"
 	"github.com/theopenlane/httpsling/httptestutil"
 )
 
 func TestExponentialBackoff_Backoff(t *testing.T) {
 	tests := []struct {
 		name           string
-		backoff        ExponentialBackoff
+		backoff        httpsling.ExponentialBackoff
 		expected       [5]time.Duration
 		expectedJitter float64
 	}{
 		{
 			name: "zero base delay",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  0,
 				Multiplier: 1,
 				Jitter:     1,
@@ -37,7 +37,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "zero multiplier",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  time.Second,
 				Multiplier: 0,
 				Jitter:     .2,
@@ -48,7 +48,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "zero jitter",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  1,
 				Multiplier: 2,
 				Jitter:     0,
@@ -58,7 +58,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "zero max",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  1,
 				Multiplier: 2,
 				Jitter:     0,
@@ -68,7 +68,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "constant",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  30,
 				Multiplier: 0,
 				Jitter:     0,
@@ -78,7 +78,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "max",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  30,
 				Multiplier: 2,
 				Jitter:     0,
@@ -88,7 +88,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "jitter",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  time.Second,
 				Multiplier: 2,
 				Jitter:     .1,
@@ -99,7 +99,7 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name: "base more than max",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay:  2 * time.Second,
 				Multiplier: 0,
 				Jitter:     0,
@@ -109,23 +109,23 @@ func TestExponentialBackoff_Backoff(t *testing.T) {
 		},
 		{
 			name:     "no delay",
-			backoff:  *NoBackoff(),
+			backoff:  *httpsling.NoBackoff(),
 			expected: [5]time.Duration{0, 0, 0, 0, 0},
 		},
 		{
 			name:     "constant delay",
-			backoff:  *ConstantBackoff(time.Second),
+			backoff:  *httpsling.ConstantBackoff(time.Second),
 			expected: [5]time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second},
 		},
 		{
 			name:           "constant delay with jitter",
-			backoff:        *ConstantBackoffWithJitter(time.Second),
+			backoff:        *httpsling.ConstantBackoffWithJitter(time.Second),
 			expected:       [5]time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second},
 			expectedJitter: 0.2,
 		},
 		{
 			name: "jitter wont go over max",
-			backoff: ExponentialBackoff{
+			backoff: httpsling.ExponentialBackoff{
 				BaseDelay: time.Second,
 				Jitter:    .2,
 				MaxDelay:  time.Second,
@@ -178,22 +178,22 @@ func (m *netError) Temporary() bool {
 }
 
 func TestDefaultShouldRetry(t *testing.T) {
-	assert.True(t, DefaultShouldRetry(1, nil, nil, &net.OpError{
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, nil, &net.OpError{
 		Op:  "accept",
 		Err: syscall.ECONNRESET,
 	}))
-	assert.True(t, DefaultShouldRetry(1, nil, nil, &net.OpError{
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, nil, &net.OpError{
 		Op:  "accept",
 		Err: syscall.ECONNABORTED,
 	}))
-	assert.True(t, DefaultShouldRetry(1, nil, nil, syscall.EPIPE))
-	assert.True(t, DefaultShouldRetry(1, nil, nil, &netError{timeout: true}))
-	assert.False(t, DefaultShouldRetry(1, nil, nil, &netError{}))
-	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(400), nil)) // nolint: bodyclose
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(500), nil))  // nolint: bodyclose
-	assert.False(t, DefaultShouldRetry(1, nil, MockResponse(501), nil)) // nolint: bodyclose
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(502), nil))  // nolint: bodyclose
-	assert.True(t, DefaultShouldRetry(1, nil, MockResponse(429), nil))  // nolint: bodyclose
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, nil, syscall.EPIPE))
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, nil, &netError{timeout: true}))
+	assert.False(t, httpsling.DefaultShouldRetry(1, nil, nil, &netError{}))
+	assert.False(t, httpsling.DefaultShouldRetry(1, nil, httpsling.MockResponse(400), nil)) // nolint: bodyclose
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, httpsling.MockResponse(500), nil))  // nolint: bodyclose
+	assert.False(t, httpsling.DefaultShouldRetry(1, nil, httpsling.MockResponse(501), nil)) // nolint: bodyclose
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, httpsling.MockResponse(502), nil))  // nolint: bodyclose
+	assert.True(t, httpsling.DefaultShouldRetry(1, nil, httpsling.MockResponse(429), nil))  // nolint: bodyclose
 }
 
 func TestOnlyIdempotentShouldRetry(t *testing.T) {
@@ -216,38 +216,38 @@ func TestOnlyIdempotentShouldRetry(t *testing.T) {
 			req, err := http.NewRequestWithContext(context.Background(), test.method, "http://test.com", nil)
 			require.NoError(t, err)
 
-			assert.Equal(t, test.expected, OnlyIdempotentShouldRetry(1, req, nil, nil))
+			assert.Equal(t, test.expected, httpsling.OnlyIdempotentShouldRetry(1, req, nil, nil))
 		})
 	}
 }
 
 func TestAllRetryers(t *testing.T) {
-	r := AllRetryers(ShouldRetryerFunc(DefaultShouldRetry), ShouldRetryerFunc(OnlyIdempotentShouldRetry))
+	r := httpsling.AllRetryers(httpsling.ShouldRetryerFunc(httpsling.DefaultShouldRetry), httpsling.ShouldRetryerFunc(httpsling.OnlyIdempotentShouldRetry))
 
 	// false + false = false
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://test.com", nil)
 	require.NoError(t, err)
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil)) // nolint: bodyclose
+	assert.False(t, r.ShouldRetry(1, req, httpsling.MockResponse(400), nil)) // nolint: bodyclose
 
 	// true + false = false
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(500), nil)) // nolint: bodyclose
+	assert.False(t, r.ShouldRetry(1, req, httpsling.MockResponse(500), nil)) // nolint: bodyclose
 
 	// false + true = false
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, "http://test.com", nil)
 	require.NoError(t, err)
-	assert.False(t, r.ShouldRetry(1, req, MockResponse(400), nil)) // nolint: bodyclose
+	assert.False(t, r.ShouldRetry(1, req, httpsling.MockResponse(400), nil)) // nolint: bodyclose
 
 	// true + true = true
-	assert.True(t, r.ShouldRetry(1, req, MockResponse(500), nil)) // nolint: bodyclose
+	assert.True(t, r.ShouldRetry(1, req, httpsling.MockResponse(500), nil)) // nolint: bodyclose
 }
 
 func TestRetry(t *testing.T) {
-	s := httptest.NewServer(MockHandler(500, Header(HeaderContentType, ContentTypeText)))
+	s := httptest.NewServer(httpsling.MockHandler(500, httpsling.Header(httpsling.HeaderContentType, httpsling.ContentTypeText)))
 	defer s.Close()
 
-	r := httptestutil.Requester(s, Retry(&RetryConfig{
+	r := httptestutil.Requester(s, httpsling.Retry(&httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff: &ExponentialBackoff{
+		Backoff: &httpsling.ExponentialBackoff{
 			BaseDelay:  50 * time.Millisecond,
 			Multiplier: 2,
 			Jitter:     0,
@@ -321,12 +321,12 @@ loop:
 }
 
 func TestRetryPost(t *testing.T) {
-	s := httptest.NewServer(MockHandler(500))
+	s := httptest.NewServer(httpsling.MockHandler(500))
 	defer s.Close()
 
-	r := httptestutil.Requester(s, Retry(&RetryConfig{
+	r := httptestutil.Requester(s, httpsling.Retry(&httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff:     &ExponentialBackoff{BaseDelay: 0},
+		Backoff:     &httpsling.ExponentialBackoff{BaseDelay: 0},
 	}))
 
 	i := httptestutil.Inspect(s)
@@ -358,7 +358,7 @@ func TestRetryPost(t *testing.T) {
 
 	// most body types will be automatically wrapped with an appropriate GetBody function, so they can
 	// be correctly replayed.
-	resp, err := r.Receive(Post(), Body("fudge"))
+	resp, err := r.Receive(httpsling.Post(), httpsling.Body("fudge"))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -368,7 +368,7 @@ func TestRetryPost(t *testing.T) {
 
 	// This type of body can't be converted, so the request's GetBody function will be nil.
 	// This will not be retried.
-	resp, err = r.Receive(Post(), Body(&dummyReader{next: strings.NewReader("fudge")}))
+	resp, err = r.Receive(httpsling.Post(), httpsling.Body(&dummyReader{next: strings.NewReader("fudge")}))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -379,7 +379,7 @@ func TestRetryPost(t *testing.T) {
 	// http.NoBody is a special case.  It's a non-nil sentinel value indicating the request has
 	// no body.  We should be able to retry this, even though GetBody will be nil.
 	expectBody = false
-	resp, err = r.Receive(Post(), Body(http.NoBody))
+	resp, err = r.Receive(httpsling.Post(), httpsling.Body(http.NoBody))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -399,16 +399,16 @@ func (d *dummyReader) Read(p []byte) (n int, err error) {
 func TestRetryRespDrained(t *testing.T) {
 	// when retrying a request, the response body of the last attempt must be
 	// fully drained first, or there will be a leak.
-	s := httptest.NewServer(MockHandler(500, Body("fudge")))
+	s := httptest.NewServer(httpsling.MockHandler(500, httpsling.Body("fudge")))
 	defer s.Close()
 
 	var responses []*http.Response
 
-	r := httptestutil.Requester(s, Retry(&RetryConfig{
+	r := httptestutil.Requester(s, httpsling.Retry(&httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff:     &ExponentialBackoff{BaseDelay: 0},
-	}), Middleware(func(doer Doer) Doer {
-		return DoerFunc(func(req *http.Request) (*http.Response, error) {
+		Backoff:     &httpsling.ExponentialBackoff{BaseDelay: 0},
+	}), httpsling.Middleware(func(doer httpsling.Doer) httpsling.Doer {
+		return httpsling.DoerFunc(func(req *http.Request) (*http.Response, error) {
 			resp, err := doer.Do(req)
 			responses = append(responses, resp)
 
@@ -439,12 +439,12 @@ func TestRetryRespDrained(t *testing.T) {
 
 func TestRetryCancelContext(t *testing.T) {
 	// context cancellation can be used to abort retries
-	s := httptest.NewServer(MockHandler(500, Body("fudge")))
+	s := httptest.NewServer(httpsling.MockHandler(500, httpsling.Body("fudge")))
 	defer s.Close()
 
-	r := httptestutil.Requester(s, Retry(&RetryConfig{
+	r := httptestutil.Requester(s, httpsling.Retry(&httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff:     &ExponentialBackoff{BaseDelay: 2 * time.Second},
+		Backoff:     &httpsling.ExponentialBackoff{BaseDelay: 2 * time.Second},
 	}))
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -471,7 +471,7 @@ func TestRetryCancelContext(t *testing.T) {
 }
 
 func TestRetryShouldRetry(t *testing.T) {
-	// test a custom ShouldRetry function.  also test that Retry calls the ShouldRetry function
+	// test a custom ShouldRetry function.  also test that retry calls the ShouldRetry function
 	// with the right args.
 	var srvCount int
 
@@ -490,10 +490,10 @@ func TestRetryShouldRetry(t *testing.T) {
 		responses []*http.Response
 	)
 
-	r := httptestutil.Requester(s, Retry(&RetryConfig{
+	r := httptestutil.Requester(s, httpsling.Retry(&httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff:     &ExponentialBackoff{BaseDelay: 0},
-		ShouldRetry: ShouldRetryerFunc(func(attempt int, req *http.Request, resp *http.Response, err error) bool {
+		Backoff:     &httpsling.ExponentialBackoff{BaseDelay: 0},
+		ShouldRetry: httpsling.ShouldRetryerFunc(func(attempt int, req *http.Request, resp *http.Response, _ error) bool {
 			count++
 			attempts = append(attempts, attempt)
 			requests = append(requests, req)
@@ -528,10 +528,10 @@ func TestRetryShouldRetry(t *testing.T) {
 
 func TestRetrySuccess(t *testing.T) {
 	// if request succeeds, no retries
-	s := httptest.NewServer(MockHandler(200, Body("fudge")))
+	s := httptest.NewServer(httpsling.MockHandler(200, httpsling.Body("fudge")))
 	defer s.Close()
 
-	r := httptestutil.Requester(s, Retry(nil))
+	r := httptestutil.Requester(s, httpsling.Retry(nil))
 
 	i := httptestutil.Inspect(s)
 
@@ -579,9 +579,9 @@ func TestRetryReadResponse(t *testing.T) {
 	// through reading the response body.
 	var count int
 
-	retryConfig := RetryConfig{
+	retryConfig := httpsling.RetryConfig{
 		MaxAttempts: 4,
-		Backoff: &ExponentialBackoff{
+		Backoff: &httpsling.ExponentialBackoff{
 			BaseDelay:  1,
 			Multiplier: 1,
 			Jitter:     0,
@@ -589,23 +589,23 @@ func TestRetryReadResponse(t *testing.T) {
 		},
 	}
 
-	newRequester := func() *Requester {
-		r, err := New(
-			Retry(&retryConfig),
-			WithDoer(DoerFunc(func(req *http.Request) (*http.Response, error) {
+	newRequester := func() *httpsling.Requester {
+		r, err := httpsling.New(
+			httpsling.Retry(&retryConfig),
+			httpsling.WithDoer(httpsling.DoerFunc(func(_ *http.Request) (*http.Response, error) {
 				count++
 				// I can't cause a real connection reset error using httptest, so I need to simulate
 				// it with a fake Doer.  https://groups.google.com/g/golang-nuts/c/AtxmEDJ4zvc
 				if count > 2 {
 					// on the third attempt, just return a valid response
-					return MockResponse(200,
-						Body("fudge"),
-						Header(HeaderContentType, ContentTypeText)), nil
+					return httpsling.MockResponse(200,
+						httpsling.Body("fudge"),
+						httpsling.Header(httpsling.HeaderContentType, httpsling.ContentTypeText)), nil
 				}
 
 				// return a response with a poisoned response body will will thrown an error after
 				// a few bytes
-				resp := MockResponse(200)
+				resp := httpsling.MockResponse(200)
 				resp.Body = io.NopCloser(&poisonedReader{})
 
 				return resp, nil

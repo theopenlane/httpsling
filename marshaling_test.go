@@ -174,7 +174,7 @@ func TestFormMarshalerMarshal(t *testing.T) {
 }
 
 func TestMarshalFuncApply(t *testing.T) {
-	var mf MarshalFunc = func(v interface{}) (bytes []byte, s string, e error) {
+	var mf MarshalFunc = func(_ interface{}) (bytes []byte, s string, e error) {
 		return nil, "red", nil
 	}
 
