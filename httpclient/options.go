@@ -11,7 +11,7 @@ import (
 // NoRedirects configures the client to no perform any redirects
 func NoRedirects() Option {
 	return OptionFunc(func(client *http.Client) error {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
 
@@ -20,10 +20,10 @@ func NoRedirects() Option {
 }
 
 // MaxRedirects configures the max number of redirects the client will perform before giving up
-func MaxRedirects(max int) Option {
+func MaxRedirects(m int) Option {
 	return OptionFunc(func(client *http.Client) error {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			if len(via) >= max {
+		client.CheckRedirect = func(_ *http.Request, via []*http.Request) error {
+			if len(via) >= m {
 				return ErrMaxAttemptsExceeded
 			}
 
@@ -56,7 +56,7 @@ func ProxyURL(proxyURL string) Option {
 			return err
 		}
 
-		t.Proxy = func(request *http.Request) (*url.URL, error) {
+		t.Proxy = func(_ *http.Request) (*url.URL, error) {
 			return u, nil
 		}
 
