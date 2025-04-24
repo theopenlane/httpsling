@@ -20,6 +20,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/mazrean/formstream v1.1.2
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/theopenlane/echox v0.2.1
+	github.com/theopenlane/echox v0.2.4
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
