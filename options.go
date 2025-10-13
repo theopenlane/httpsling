@@ -135,6 +135,43 @@ func Header(key, value string) Option {
 	})
 }
 
+// HeadersFromValues sets multiple headers from an http.Header map using Header.Set semantics.
+func HeadersFromValues(h http.Header) Option {
+	return OptionFunc(func(b *Requester) error {
+		if h == nil {
+			return nil
+		}
+		if b.Header == nil {
+			b.Header = make(http.Header)
+		}
+		for k, vs := range h {
+			// Set replaces existing values; mirror Header behavior
+			if len(vs) == 0 {
+				b.Header.Del(k)
+				continue
+			}
+			b.Header[k] = append([]string(nil), vs...)
+		}
+		return nil
+	})
+}
+
+// HeadersFromMap sets multiple headers from a simple string map using Header.Set semantics.
+func HeadersFromMap(m map[string]string) Option {
+	return OptionFunc(func(b *Requester) error {
+		if m == nil {
+			return nil
+		}
+		if b.Header == nil {
+			b.Header = make(http.Header)
+		}
+		for k, v := range m {
+			b.Header.Set(k, v)
+		}
+		return nil
+	})
+}
+
 // DeleteHeader deletes a header key, using Header.Del()
 func DeleteHeader(key string) Option {
 	return OptionFunc(func(b *Requester) error {
@@ -244,7 +281,7 @@ func AppendPath(elements ...string) Option {
 }
 
 // QueryParams adds params to the Requester.QueryParams member
-func QueryParams(queryStructs ...interface{}) Option {
+func QueryParams(queryStructs ...any) Option {
 	return OptionFunc(func(s *Requester) error {
 		if s.QueryParams == nil {
 			s.QueryParams = url.Values{}
@@ -303,7 +340,7 @@ func QueryParam(k, v string) Option {
 }
 
 // Body sets the body of the request
-func Body(body interface{}) Option {
+func Body(body any) Option {
 	return OptionFunc(func(b *Requester) error {
 		b.Body = body
 
@@ -388,6 +425,14 @@ func Form() Option {
 	return WithMarshaler(&FormMarshaler{})
 }
 
+// JSONBody sets JSON marshaling and attaches the given body value.
+func JSONBody(v any) Option {
+	return joinOpts(
+		JSON(false),
+		Body(v),
+	)
+}
+
 // Client replaces Requester.Doer with an *http.Client
 func Client(opts ...httpclient.Option) Option {
 	return OptionFunc(func(b *Requester) error {
@@ -420,37 +465,15 @@ func WithDoer(d Doer) Option {
 	})
 }
 
+// WithHTTPClient replaces Requester.Doer with the given *http.Client.
+func WithHTTPClient(c *http.Client) Option {
+	return WithDoer(c)
+}
+
 // WithMaxFileSize sets the maximum file size for file uploads
 func WithMaxFileSize(i int64) Option {
 	return OptionFunc(func(r *Requester) error {
 		r.MaxFileSize = i
-
-		return nil
-	})
-}
-
-// WithValidationFunc allows you to set a function that can be used to perform validations
-func WithValidationFunc(validationFunc ValidationFunc) Option {
-	return OptionFunc(func(r *Requester) error {
-		r.validationFunc = validationFunc
-
-		return nil
-	})
-}
-
-// WithNameFuncGenerator allows you configure how you'd like to rename your uploaded files
-func WithNameFuncGenerator(nameFunc NameGeneratorFunc) Option {
-	return OptionFunc(func(r *Requester) error {
-		r.fileNameFuncGenerator = nameFunc
-
-		return nil
-	})
-}
-
-// WithFileErrorResponseHandler allows you to configure how you'd like to handle errors when a file upload fails either to your own server or the destination server or both
-func WithFileErrorResponseHandler(errHandler ErrResponseHandler) Option {
-	return OptionFunc(func(r *Requester) error {
-		r.fileUploaderrorResponseHandler = errHandler
 
 		return nil
 	})

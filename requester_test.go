@@ -220,11 +220,11 @@ func TestRequesterRequestBody(t *testing.T) {
 }
 
 func TestRequesterRequestMarshaler(t *testing.T) {
-	var capturedV interface{}
+	var capturedV any
 
 	requester := Requester{
 		Body: []string{"blue"},
-		Marshaler: MarshalFunc(func(v interface{}) ([]byte, string, error) {
+		Marshaler: MarshalFunc(func(v any) ([]byte, string, error) {
 			capturedV = v
 			return []byte("red"), "orange", nil
 		}),
@@ -242,7 +242,7 @@ func TestRequesterRequestMarshaler(t *testing.T) {
 	require.Equal(t, "orange", req.Header.Get("Content-Type"))
 
 	t.Run("errors", func(t *testing.T) {
-		requester.Marshaler = MarshalFunc(func(v interface{}) ([]byte, string, error) {
+		requester.Marshaler = MarshalFunc(func(v any) ([]byte, string, error) {
 			return nil, "", errors.New("boom") // nolint: err113
 		})
 
@@ -268,6 +268,26 @@ func TestRequesterRequestContentLength(t *testing.T) {
 	require.NoError(t, err)
 
 	require.EqualValues(t, 10, req.ContentLength)
+}
+
+func TestReceiveRestoresResponseBody(t *testing.T) {
+    ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set(HeaderContentType, ContentTypeText)
+        w.WriteHeader(200)
+        w.Write([]byte("pong")) // nolint: errcheck
+    }))
+    defer ts.Close()
+
+    var out string
+    resp, err := Receive(&out, Get(ts.URL))
+    require.NoError(t, err)
+    require.NotNil(t, resp)
+
+    b, err := io.ReadAll(resp.Body)
+    require.NoError(t, err)
+    assert.Equal(t, "pong", string(b))
+
+    resp.Body.Close()
 }
 
 func TestRequesterRequestGetBody(t *testing.T) {
@@ -463,7 +483,7 @@ func TestRequesterReceiveWithopts(t *testing.T) {
 
 	resp, err := MustNew(
 		Get(ts.URL, "/profile"),
-		UnmarshalFunc(func(data []byte, contentType string, v interface{}) error {
+		UnmarshalFunc(func(data []byte, contentType string, v any) error {
 			called = true
 			return nil
 		}),
@@ -495,7 +515,7 @@ func TestRequesterReceiveContext(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		cases := []struct {
-			into interface{}
+			into any
 		}{
 			{&testModel{}},
 			{nil},
@@ -797,7 +817,7 @@ func ExampleRequester_Request() {
 
 	req, _ := r.Request(
 		JSON(true),
-		Body(map[string]interface{}{"size": "big"}),
+		Body(map[string]any{"size": "big"}),
 	)
 
 	fmt.Printf("%s %s %s\n", req.Method, req.URL.String(), req.Proto)

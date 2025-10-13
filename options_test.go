@@ -458,11 +458,11 @@ func TestBody(t *testing.T) {
 
 type testMarshaler struct{}
 
-func (*testMarshaler) Unmarshal(_ []byte, _ string, _ interface{}) error {
+func (*testMarshaler) Unmarshal(_ []byte, _ string, _ any) error {
 	panic("implement me")
 }
 
-func (*testMarshaler) Marshal(_ interface{}) (data []byte, contentType string, err error) {
+func (*testMarshaler) Marshal(_ any) (data []byte, contentType string, err error) {
 	panic("implement me")
 }
 
@@ -635,7 +635,7 @@ func ExampleBody() {
 }
 
 func ExampleBody_map() {
-	req, _ := Request(Body(map[string]interface{}{"color": "red"}))
+	req, _ := Request(Body(map[string]any{"color": "red"}))
 
 	b, _ := io.ReadAll(req.Body)
 

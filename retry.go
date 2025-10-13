@@ -186,9 +186,9 @@ func Retry(config *RetryConfig) Middleware {
 
 	return func(next Doer) Doer {
 		return DoerFunc(func(req *http.Request) (*http.Response, error) {
-			if bodyEmpty(req) {
-				return next.Do(req)
-			}
+            if unreplayableBody(req) {
+                return next.Do(req)
+            }
 
 			var (
 				resp    *http.Response
@@ -229,8 +229,10 @@ func Retry(config *RetryConfig) Middleware {
 	}
 }
 
-func bodyEmpty(req *http.Request) bool {
-	return req.Body != nil && req.Body != http.NoBody && req.GetBody == nil
+// unreplayableBody indicates whether the request body cannot be replayed
+// (i.e., non-nil, not http.NoBody, and GetBody is nil).
+func unreplayableBody(req *http.Request) bool {
+    return req.Body != nil && req.Body != http.NoBody && req.GetBody == nil
 }
 
 type errCloser struct {

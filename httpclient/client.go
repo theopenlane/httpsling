@@ -27,18 +27,17 @@ func Apply(c *http.Client, opts ...Option) error {
 }
 
 func newDefaultTransport() *http.Transport {
-	return &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second, // nolint: mnd
-			KeepAlive: 30 * time.Second, // nolint: mnd
-			DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          100,              // nolint: mnd
-		IdleConnTimeout:       90 * time.Second, // nolint: mnd
-		TLSHandshakeTimeout:   10 * time.Second, // nolint: mnd
-		ExpectContinueTimeout: 1 * time.Second,  // nolint: mnd
-	}
+    return &http.Transport{
+        Proxy: http.ProxyFromEnvironment,
+        DialContext: (&net.Dialer{
+            Timeout:   30 * time.Second, // nolint: mnd
+            KeepAlive: 30 * time.Second, // nolint: mnd
+        }).DialContext,
+        MaxIdleConns:          100,              // nolint: mnd
+        IdleConnTimeout:       90 * time.Second, // nolint: mnd
+        TLSHandshakeTimeout:   10 * time.Second, // nolint: mnd
+        ExpectContinueTimeout: 1 * time.Second,  // nolint: mnd
+    }
 }
 
 // Option is a configuration option for building an http.Client

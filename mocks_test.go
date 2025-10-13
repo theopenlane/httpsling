@@ -16,13 +16,13 @@ import (
 func TestMockHandler(t *testing.T) {
 	h := MockHandler(201,
 		JSON(false),
-		Body(map[string]interface{}{"color": "blue"}),
+		Body(map[string]any{"color": "blue"}),
 	)
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	var out map[string]interface{}
+	var out map[string]any
 	resp, err := Receive(&out, Get(ts.URL))
 	require.NoError(t, err)
 
@@ -40,9 +40,9 @@ func TestChannelHandler(t *testing.T) {
 	defer ts.Close()
 
 	in <- MockResponse(201, JSON(false), // nolint: bodyclose
-		Body(map[string]interface{}{"color": "blue"}))
+		Body(map[string]any{"color": "blue"}))
 
-	var out map[string]interface{}
+	var out map[string]any
 	resp, err := Receive(&out, Get(ts.URL))
 	require.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestChannelHandler(t *testing.T) {
 func TestMockResponse(t *testing.T) {
 	resp := MockResponse(201,
 		JSON(false),
-		Body(map[string]interface{}{"color": "red"}),
+		Body(map[string]any{"color": "red"}),
 	)
 
 	defer resp.Body.Close()
@@ -77,7 +77,7 @@ func TestMockResponse(t *testing.T) {
 func TestMockDoer(t *testing.T) {
 	d := MockDoer(201,
 		JSON(false),
-		Body(map[string]interface{}{"color": "blue"}),
+		Body(map[string]any{"color": "blue"}),
 	)
 
 	req, err := Request(Get("/profile"), d)
@@ -104,7 +104,7 @@ func TestChannelDoer(t *testing.T) {
 
 	in <- MockResponse(201, // nolint: bodyclose
 		JSON(false),
-		Body(map[string]interface{}{"color": "blue"}),
+		Body(map[string]any{"color": "blue"}),
 	)
 
 	req, err := Request(Get("/profile"), d)
@@ -129,12 +129,12 @@ func TestChannelDoer(t *testing.T) {
 func ExampleMockDoer() {
 	d := MockDoer(201,
 		JSON(false),
-		Body(map[string]interface{}{"color": "blue"}),
+		Body(map[string]any{"color": "blue"}),
 	)
 
 	// Since DoerFunc is an Option, it can be passed directly to functions
 	// which accept Options.
-	var out map[string]interface{}
+	var out map[string]any
 	resp, _ := Receive(&out, d)
 
 	defer resp.Body.Close()
@@ -154,13 +154,13 @@ func ExampleMockDoer() {
 func ExampleMockHandler() {
 	h := MockHandler(201,
 		JSON(false),
-		Body(map[string]interface{}{"color": "blue"}),
+		Body(map[string]any{"color": "blue"}),
 	)
 
 	ts := httptest.NewServer(h)
 	defer ts.Close()
 
-	var out map[string]interface{}
+	var out map[string]any
 	resp, _ := Receive(&out, URL(ts.URL))
 
 	defer resp.Body.Close()
