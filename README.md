@@ -1,4 +1,4 @@
-[![Build status](https://badge.buildkite.com/f74a461120ffcadbf7796d5aac8ae8c03a1cbcfda142220074.svg)](https://buildkite.com/theopenlane/httpsling)
+[![Build status](https://badge.buildkite.com/f74a461120ffcadbf7796d5aac8ae8c03a1cbcfda142220074.svg)](https://buildkite.com/theopenlane/httpsling?branch=main)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=theopenlane_httpsling&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=theopenlane_httpsling)
 [![Go Report Card](https://goreportcard.com/badge/github.com/theopenlane/httpsling)](https://goreportcard.com/report/github.com/theopenlane/httpsling)
 [![Go Reference](https://pkg.go.dev/badge/github.com/theopenlane/httpsling.svg)](https://pkg.go.dev/github.com/theopenlane/httpsling)
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Perform a GET request
-	var out map[string]interface{}
+	var out map[string]any
 	resp, err := requester.Receive(&out, httpsling.Get("resource"))
 	if err != nil {
 		log.Fatal(err)
@@ -56,9 +56,17 @@ RequestWithContext(context.Context, ...Option) (*http.Request, error)
 Send(...Option) (*http.Response, error)
 SendWithContext(context.Context, ...Option) (*http.Response, error)
 
-// build and send the request and parse the response into an interface
-Receive(interface{}, ...Option) (*http.Response, []byte, error)
-ReceiveWithContext(context.Context, interface{}, ...Option) (*http.Response, error)
+// build and send the request and parse the response into a value
+Receive(any, ...Option) (*http.Response, error)
+ReceiveWithContext(context.Context, any, ...Option) (*http.Response, error)
+
+// typed helper using generics
+ReceiveInto[T any](...Option) (*http.Response, T, error)
+ReceiveIntoWithContext[T any](context.Context, ...Option) (*http.Response, T, error)
+
+// stream response body into an io.Writer
+ReceiveTo(io.Writer, ...Option) (*http.Response, int64, error)
+ReceiveToWithContext(context.Context, io.Writer, ...Option) (*http.Response, int64, error)
 ```
 
 ### Configuring BaseURL
@@ -130,7 +138,7 @@ The library provides a `Receive` to construct and dispatch HTTP. Here are exampl
 ```go
     resp, err := requester.ReceiveWithContext(context.Background(), &out,
         httpsling.Post("/path"),
-        httpsling.Body(map[string]interface{}{"key": "value"})
+        httpsling.Body(map[string]any{"key": "value"})
     )
 ```
 
@@ -139,7 +147,7 @@ The library provides a `Receive` to construct and dispatch HTTP. Here are exampl
 ```go
     resp, err := requester.ReceiveWithContext(context.Background(), &out,
         httpsling.Put("/path/123456"),
-        httpsling.Body(map[string]interface{}{"key": "newValue"})
+        httpsling.Body(map[string]any{"key": "newValue"})
     )
 ```
 
@@ -186,6 +194,8 @@ defer resp.Body.Close()
 log.Printf("Status Code: %d\n", resp.StatusCode)
 log.Printf("Response Data: %s\n", out.Data)
 ```
+
+Note: Receive fully reads the response into memory to unmarshal, and restores `resp.Body` so it remains readable by callers.
 
 ### Evaluating Response Success
 

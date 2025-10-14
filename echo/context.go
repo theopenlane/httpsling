@@ -39,6 +39,6 @@ func (a *EchoContextAdapter) Err() error {
 
 // Value implements the Value method of the context.Context interface
 // used to retrieve a value associated with a specific key from the context
-func (a *EchoContextAdapter) Value(key interface{}) interface{} {
+func (a *EchoContextAdapter) Value(key any) any {
 	return a.c.Get(fmt.Sprintf("%v", key))
 }

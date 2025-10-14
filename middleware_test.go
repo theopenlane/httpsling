@@ -53,9 +53,9 @@ func TestDumpToLog(t *testing.T) {
 
 	defer ts.Close()
 
-	var args []interface{}
+	var args []any
 
-	resp, err := Receive(Get(ts.URL), DumpToLog(func(a ...interface{}) {
+	resp, err := Receive(Get(ts.URL), DumpToLog(func(a ...any) {
 		args = append(args, a...)
 	}))
 	if err != nil {
@@ -295,7 +295,7 @@ func ExampleMiddleware() {
 }
 
 func ExampleDumpToLog() {
-	resp, err := Send(DumpToLog(func(a ...interface{}) {
+	resp, err := Send(DumpToLog(func(a ...any) {
 		fmt.Println(a...)
 	}))
 	if err != nil {
@@ -311,9 +311,10 @@ func ExampleDumpToLog() {
 
 	defer resp.Body.Close()
 
-	var t *testing.T
-
-	resp, err = Send(DumpToLog(t.Log))
+	// Example with a custom logger function; do not use t.Log in examples as t may be nil.
+	resp, err = Send(DumpToLog(func(a ...any) {
+		fmt.Println(a...)
+	}))
 	if err != nil {
 		fmt.Println(err)
 	}

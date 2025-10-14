@@ -13,21 +13,21 @@ import (
 )
 
 func Example() {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write([]byte(`{"color":"red"}`))
-	}))
-	defer s.Close()
+    s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(200)
+        w.Write([]byte(`{"color":"red"}`))
+    }))
+    defer s.Close()
 
-	var out map[string]string
-	resp, _ := Receive(
-		out,
-		Get(s.URL),
-	)
+    var out map[string]string
+    resp, _ := Receive(
+        &out,
+        Get(s.URL),
+    )
 
-	fmt.Println(resp.StatusCode)
-	fmt.Printf("%s", out)
+    fmt.Println(resp.StatusCode)
+    fmt.Printf("%v", out)
 }
 
 func Example_receive() {

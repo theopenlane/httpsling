@@ -17,16 +17,16 @@ var DefaultUnmarshaler Unmarshaler = NewContentTypeUnmarshaler()
 
 // Marshaler marshals values into a []byte
 type Marshaler interface {
-	Marshal(v interface{}) (data []byte, contentType string, err error)
+	Marshal(v any) (data []byte, contentType string, err error)
 }
 
 // Unmarshaler unmarshals a []byte response body into a value
 type Unmarshaler interface {
-	Unmarshal(data []byte, contentType string, v interface{}) error
+	Unmarshal(data []byte, contentType string, v any) error
 }
 
 // MarshalFunc adapts a function to the Marshaler interface
-type MarshalFunc func(v interface{}) ([]byte, string, error)
+type MarshalFunc func(v any) ([]byte, string, error)
 
 // Apply implements Option
 func (f MarshalFunc) Apply(r *Requester) error {
@@ -35,12 +35,12 @@ func (f MarshalFunc) Apply(r *Requester) error {
 }
 
 // Marshal implements the Marshaler interface
-func (f MarshalFunc) Marshal(v interface{}) ([]byte, string, error) {
+func (f MarshalFunc) Marshal(v any) ([]byte, string, error) {
 	return f(v)
 }
 
 // UnmarshalFunc adapts a function to the Unmarshaler interface
-type UnmarshalFunc func(data []byte, contentType string, v interface{}) error
+type UnmarshalFunc func(data []byte, contentType string, v any) error
 
 // Apply implements Option
 func (f UnmarshalFunc) Apply(r *Requester) error {
@@ -49,7 +49,7 @@ func (f UnmarshalFunc) Apply(r *Requester) error {
 }
 
 // Unmarshal implements the Unmarshaler interface
-func (f UnmarshalFunc) Unmarshal(data []byte, contentType string, v interface{}) error {
+func (f UnmarshalFunc) Unmarshal(data []byte, contentType string, v any) error {
 	return f(data, contentType, v)
 }
 
@@ -59,12 +59,12 @@ type JSONMarshaler struct {
 }
 
 // Unmarshal implements Unmarshaler
-func (m *JSONMarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
+func (m *JSONMarshaler) Unmarshal(data []byte, _ string, v any) error {
 	return json.Unmarshal(data, v)
 }
 
 // Marshal implements Marshaler
-func (m *JSONMarshaler) Marshal(v interface{}) (data []byte, contentType string, err error) {
+func (m *JSONMarshaler) Marshal(v any) (data []byte, contentType string, err error) {
 	if m.Indent {
 		data, err = json.MarshalIndent(v, "", "  ")
 	} else {
@@ -87,12 +87,12 @@ type XMLMarshaler struct {
 }
 
 // Unmarshal implements Unmarshaler
-func (*XMLMarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
+func (*XMLMarshaler) Unmarshal(data []byte, _ string, v any) error {
 	return xml.Unmarshal(data, v)
 }
 
 // Marshal implements Marshaler
-func (m *XMLMarshaler) Marshal(v interface{}) (data []byte, contentType string, err error) {
+func (m *XMLMarshaler) Marshal(v any) (data []byte, contentType string, err error) {
 	if m.Indent {
 		data, err = xml.MarshalIndent(v, "", "  ")
 	} else {
@@ -114,14 +114,14 @@ type TextUnmarshaler struct {
 }
 
 // Unmarshal implements Unmarshaler
-func (*TextUnmarshaler) Unmarshal(data []byte, _ string, v interface{}) error {
+func (*TextUnmarshaler) Unmarshal(data []byte, _ string, v any) error {
 	*(v.(*string)) = string(data)
 
 	return nil
 }
 
 // Marshal implements Marshaler
-func (m *TextUnmarshaler) Marshal(v interface{}) (data []byte, contentType string, err error) {
+func (m *TextUnmarshaler) Marshal(v any) (data []byte, contentType string, err error) {
 	data = []byte(fmt.Sprintf("%v", v))
 
 	return data, ContentTypeTextUTF8, nil
@@ -137,7 +137,7 @@ func (m *TextUnmarshaler) Apply(r *Requester) error {
 type FormMarshaler struct{}
 
 // Marshal implements Marshaler
-func (*FormMarshaler) Marshal(v interface{}) (data []byte, contentType string, err error) {
+func (*FormMarshaler) Marshal(v any) (data []byte, contentType string, err error) {
 	switch t := v.(type) {
 	case map[string][]string:
 		urlV := url.Values(t)
@@ -191,7 +191,7 @@ func defaultUnmarshalers() map[string]Unmarshaler {
 }
 
 // Unmarshal implements Unmarshaler
-func (c *ContentTypeUnmarshaler) Unmarshal(data []byte, contentType string, v interface{}) error {
+func (c *ContentTypeUnmarshaler) Unmarshal(data []byte, contentType string, v any) error {
 	if c.Unmarshalers == nil {
 		c.Unmarshalers = defaultUnmarshalers()
 	}

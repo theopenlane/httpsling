@@ -64,7 +64,7 @@ func DumpToStdout(ts *httptest.Server) {
 	Dump(ts, os.Stdout)
 }
 
-type logFunc func(a ...interface{})
+type logFunc func(a ...any)
 
 // Write implements io.Writer
 func (f logFunc) Write(p []byte) (n int, err error) {
@@ -74,6 +74,6 @@ func (f logFunc) Write(p []byte) (n int, err error) {
 }
 
 // DumpToLog writes requests and responses to a logging function
-func DumpToLog(ts *httptest.Server, logf func(a ...interface{})) {
+func DumpToLog(ts *httptest.Server, logf func(a ...any)) {
 	Dump(ts, logFunc(logf))
 }

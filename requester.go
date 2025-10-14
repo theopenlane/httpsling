@@ -17,7 +17,8 @@ type Requester struct {
 	Method string
 	// URL is the URL to request
 	URL *url.URL
-	// Header supplies the request headers; if the Content-Type header is set here, it will override the Content-Type header supplied by the Marshaler
+	// Header supplies the request headers; note: if a Marshaler provides a Content-Type,
+	// it will override any Content-Type set here when building the http.Request
 	Header http.Header
 	// GetBody is a function that returns a ReadCloser for the request body
 	GetBody func() (io.ReadCloser, error)
@@ -35,7 +36,7 @@ type Requester struct {
 	QueryParams url.Values
 	// Body can be set to a string, []byte, io.Reader, or a struct; if set to a string, []byte, or io.Reader, the value will be used as the body of the request
 	// If set to a struct, the Marshaler will be used to marshal the value into the request body
-	Body interface{}
+	Body any
 	// Marshaler will be used to marshal the Body value into the body of the request.
 	Marshaler Marshaler
 	// Doer holds the HTTP client for used to execute httpsling
@@ -92,7 +93,8 @@ func cloneValues(v url.Values) url.Values {
 	v2 := make(url.Values, len(v))
 
 	for key, value := range v {
-		v2[key] = value
+		// deep copy slices to avoid aliasing
+		v2[key] = append([]string(nil), value...)
 	}
 
 	return v2
@@ -256,12 +258,12 @@ func (r *Requester) Do(req *http.Request) (*http.Response, error) {
 }
 
 // Receive creates a new HTTP request and returns the response
-func (r *Requester) Receive(into interface{}, opts ...Option) (resp *http.Response, err error) {
+func (r *Requester) Receive(into any, opts ...Option) (resp *http.Response, err error) {
 	return r.ReceiveWithContext(context.Background(), into, opts...)
 }
 
 // ReceiveWithContext does the same as Receive, but requires a context
-func (r *Requester) ReceiveWithContext(ctx context.Context, into interface{}, opts ...Option) (resp *http.Response, err error) {
+func (r *Requester) ReceiveWithContext(ctx context.Context, into any, opts ...Option) (resp *http.Response, err error) {
 	// if the first option is an Option, we need to copy those over and set into to nil
 	if opt, ok := into.(Option); ok {
 		opts = append(opts, nil)
@@ -298,6 +300,15 @@ func (r *Requester) ReceiveWithContext(ctx context.Context, into interface{}, op
 		err = unmarshaler.Unmarshal(body, resp.Header.Get(HeaderContentType), into)
 	}
 
+	// return a shallow copy with a restored Body so callers can still read it,
+	// without mutating the original response reference that may be observed by
+	// middleware (e.g., retry tests expecting closed bodies in previous attempts)
+	if resp != nil {
+		respCopy := *resp
+		respCopy.Body = io.NopCloser(bytes.NewReader(body))
+		return &respCopy, err
+	}
+
 	return resp, err
 }
 
@@ -329,6 +340,37 @@ func readBody(resp *http.Response) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+// ReceiveTo streams the response body to the provided writer without buffering
+// the entire response in memory. It returns the response and the number of bytes
+// copied. The response body is fully consumed and closed by this method.
+func (r *Requester) ReceiveTo(ctx context.Context, w io.Writer, opts ...Option) (*http.Response, int64, error) {
+	reqs, err := r.withOpts(opts...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req, err := reqs.RequestWithContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	resp, err := reqs.Do(req)
+	if err != nil {
+		return resp, 0, err
+	}
+
+	if resp == nil || resp.Body == nil || resp.Body == http.NoBody {
+		return resp, 0, nil
+	}
+
+	defer resp.Body.Close()
+	n, copyErr := io.Copy(w, resp.Body)
+
+	return resp, n, copyErr
+}
+
+// Note: generic helpers exist at the package level (ReceiveInto, ReceiveIntoWithContext).
 
 // Params returns the QueryParams
 func (r *Requester) Params() url.Values {

@@ -14,7 +14,7 @@ import (
 func TestJSONMarshalerMarshal(t *testing.T) {
 	m := JSONMarshaler{}
 
-	v := map[string]interface{}{"color": "red"}
+	v := map[string]any{"color": "red"}
 
 	expected, err := json.Marshal(v)
 	require.NoError(t, err)
@@ -37,12 +37,12 @@ func TestJSONMarshalerUnmarshal(t *testing.T) {
 	m := JSONMarshaler{}
 	d := []byte(`{"color":"red"}`)
 
-	var v interface{}
+	var v any
 
 	err := m.Unmarshal(d, "", &v)
 	require.NoError(t, err)
 
-	require.Equal(t, map[string]interface{}{"color": "red"}, v)
+	require.Equal(t, map[string]any{"color": "red"}, v)
 }
 
 type testModel struct {
@@ -142,7 +142,7 @@ func TestContentTypeUnmarshalerApply(t *testing.T) {
 
 func TestFormMarshalerMarshal(t *testing.T) {
 	testCases := []struct {
-		input  interface{}
+		input  any
 		output string
 	}{
 		{
@@ -174,7 +174,7 @@ func TestFormMarshalerMarshal(t *testing.T) {
 }
 
 func TestMarshalFuncApply(t *testing.T) {
-	var mf MarshalFunc = func(_ interface{}) (bytes []byte, s string, e error) {
+	var mf MarshalFunc = func(_ any) (bytes []byte, s string, e error) {
 		return nil, "red", nil
 	}
 
@@ -196,7 +196,7 @@ func ExampleFormMarshaler() {
 }
 
 func ExampleJSONMarshaler() {
-	req, _ := Request(&JSONMarshaler{Indent: false}, Body(map[string]interface{}{"color": "red"}))
+	req, _ := Request(&JSONMarshaler{Indent: false}, Body(map[string]any{"color": "red"}))
 
 	b, _ := io.ReadAll(req.Body)
 

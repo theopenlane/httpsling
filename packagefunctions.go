@@ -2,6 +2,7 @@ package httpsling
 
 import (
 	"context"
+	"io"
 	"net/http"
 )
 
@@ -28,11 +29,37 @@ func SendWithContext(ctx context.Context, opts ...Option) (*http.Response, error
 }
 
 // Receive uses the DefaultRequester to create a request, execute it, and read the response
-func Receive(into interface{}, opts ...Option) (*http.Response, error) {
+func Receive(into any, opts ...Option) (*http.Response, error) {
 	return DefaultRequester.Receive(into, opts...)
 }
 
 // ReceiveWithContext does the same as Receive(), but attaches a Context to the request
-func ReceiveWithContext(ctx context.Context, into interface{}, opts ...Option) (*http.Response, error) {
+func ReceiveWithContext(ctx context.Context, into any, opts ...Option) (*http.Response, error) {
 	return DefaultRequester.ReceiveWithContext(ctx, into, opts...)
+}
+
+// ReceiveInto builds, sends and unmarshals into a typed value using the DefaultRequester.
+func ReceiveInto[T any](opts ...Option) (*http.Response, T, error) {
+	var out T
+	resp, err := DefaultRequester.ReceiveWithContext(context.Background(), &out, opts...)
+
+	return resp, out, err
+}
+
+// ReceiveIntoWithContext does the same as ReceiveInto but with a context.
+func ReceiveIntoWithContext[T any](ctx context.Context, opts ...Option) (*http.Response, T, error) {
+	var out T
+	resp, err := DefaultRequester.ReceiveWithContext(ctx, &out, opts...)
+
+	return resp, out, err
+}
+
+// ReceiveTo streams the response body into the writer using the DefaultRequester.
+func ReceiveTo(w io.Writer, opts ...Option) (*http.Response, int64, error) {
+	return DefaultRequester.ReceiveTo(context.Background(), w, opts...)
+}
+
+// ReceiveToWithContext streams the response body into the writer with a context.
+func ReceiveToWithContext(ctx context.Context, w io.Writer, opts ...Option) (*http.Response, int64, error) {
+	return DefaultRequester.ReceiveTo(ctx, w, opts...)
 }
