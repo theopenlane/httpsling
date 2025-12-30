@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
-	github.com/google/go-querystring v1.1.0
+	github.com/google/go-querystring v1.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/theopenlane/utils v0.5.2
 )
