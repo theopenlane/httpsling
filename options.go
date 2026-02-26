@@ -141,17 +141,21 @@ func HeadersFromValues(h http.Header) Option {
 		if h == nil {
 			return nil
 		}
+
 		if b.Header == nil {
 			b.Header = make(http.Header)
 		}
+
 		for k, vs := range h {
 			// Set replaces existing values; mirror Header behavior
 			if len(vs) == 0 {
 				b.Header.Del(k)
 				continue
 			}
+
 			b.Header[k] = append([]string(nil), vs...)
 		}
+
 		return nil
 	})
 }
@@ -162,12 +166,15 @@ func HeadersFromMap(m map[string]string) Option {
 		if m == nil {
 			return nil
 		}
+
 		if b.Header == nil {
 			b.Header = make(http.Header)
 		}
+
 		for k, v := range m {
 			b.Header.Set(k, v)
 		}
+
 		return nil
 	})
 }
@@ -501,6 +508,19 @@ func WithNameFuncGenerator(nameFunc NameGeneratorFunc) Option {
 func WithFileErrorResponseHandler(errHandler ErrResponseHandler) Option {
 	return OptionFunc(func(r *Requester) error {
 		r.fileUploaderrorResponseHandler = errHandler
+
+		return nil
+	})
+}
+
+// OnError sets the decode target for non-2xx responses. When a response with a
+// non-success status code is received, the body is decoded into v and
+// ErrUnsuccessfulResponse is returned. v must be a non-nil pointer.
+// OnError is mutually exclusive with ExpectCode/ExpectSuccessCode middleware;
+// if both are set, the middleware error fires first and OnError is not reached.
+func OnError(v any) Option {
+	return OptionFunc(func(r *Requester) error {
+		r.errorInto = v
 
 		return nil
 	})

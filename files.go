@@ -56,7 +56,7 @@ func FilesFromContextWithKey(r *http.Request, key string) ([]File, error) {
 func MimeTypeValidator(validMimeTypes ...string) ValidationFunc {
 	return func(f File) error {
 		for _, mimeType := range validMimeTypes {
-			if strings.EqualFold(strings.ToLower(mimeType), f.MimeType) {
+			if strings.EqualFold((mimeType), f.MimeType) {
 				return nil
 			}
 		}

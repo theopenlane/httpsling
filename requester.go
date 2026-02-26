@@ -45,6 +45,9 @@ type Requester struct {
 	Middleware []Middleware
 	// Unmarshaler will be used by the Receive methods to unmarshal the response body
 	Unmarshaler Unmarshaler
+	// errorInto is the decode target for non-2xx responses, set via OnError.
+	// When nil, non-2xx bodies are decoded into the success target (current behavior).
+	errorInto any
 	// MaxFileSize is the maximum size of a file to download
 	MaxFileSize int64
 	// ValidationFunc is a function that can be used to validate the response
@@ -290,13 +293,19 @@ func (r *Requester) ReceiveWithContext(ctx context.Context, into any, opts ...Op
 		return resp, bodyReadError
 	}
 
-	// if the into is not nil, unmarshal the body into it
-	if into != nil {
-		unmarshaler := r.Unmarshaler
-		if unmarshaler == nil {
-			unmarshaler = DefaultUnmarshaler
-		}
+	unmarshaler := r.Unmarshaler
+	if unmarshaler == nil {
+		unmarshaler = DefaultUnmarshaler
+	}
 
+	switch {
+	case r.errorInto != nil && resp != nil && !IsSuccess(resp):
+		if unmarshalErr := unmarshaler.Unmarshal(body, resp.Header.Get(HeaderContentType), r.errorInto); unmarshalErr != nil {
+			err = fmt.Errorf("%w: status %d: failed to decode error body: %w", ErrUnsuccessfulResponse, resp.StatusCode, unmarshalErr)
+		} else {
+			err = fmt.Errorf("%w: status %d", ErrUnsuccessfulResponse, resp.StatusCode)
+		}
+	case into != nil:
 		err = unmarshaler.Unmarshal(body, resp.Header.Get(HeaderContentType), into)
 	}
 
@@ -306,6 +315,7 @@ func (r *Requester) ReceiveWithContext(ctx context.Context, into any, opts ...Op
 	if resp != nil {
 		respCopy := *resp
 		respCopy.Body = io.NopCloser(bytes.NewReader(body))
+
 		return &respCopy, err
 	}
 

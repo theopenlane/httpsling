@@ -198,7 +198,7 @@ func (c *ContentTypeUnmarshaler) Unmarshal(data []byte, contentType string, v an
 
 	mediaType, _, err := mime.ParseMediaType(contentType)
 	if err != nil {
-		return fmt.Errorf(" %w: failed to parse content type: %s", err, contentType)
+		return fmt.Errorf("%w: failed to parse content type: %s", err, contentType)
 	}
 
 	if u := c.Unmarshalers[mediaType]; u != nil {
@@ -223,13 +223,15 @@ func (c *ContentTypeUnmarshaler) Apply(r *Requester) error {
 // generalMediaType will return a media type with just the suffix as the subtype, e.g.
 // application/vnd.api+json -> application/json
 func generalMediaType(s string) string {
-	i2 := strings.LastIndex(s, "+")
-	if i2 > -1 && len(s) > i2+1 {
-		i := strings.Index(s, "/")
-		if i > -1 {
-			return s[:i+1] + s[i2+1:]
-		}
+	mainType, subtype, ok := strings.Cut(s, "/")
+	if !ok || mainType == "" {
+		return ""
 	}
 
-	return ""
+	_, suffix, ok := strings.Cut(subtype, "+")
+	if !ok || suffix == "" {
+		return ""
+	}
+
+	return mainType + "/" + suffix
 }
