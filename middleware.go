@@ -57,22 +57,14 @@ func Dump(w io.Writer) Middleware {
 	}
 }
 
-// DumpToStout dumps requests and responses to os.Stdout
-//
-// Deprecated: use DumpToStdout instead.
-func DumpToStout() Middleware {
+// DumpToStdout dumps requests and responses to os.Stdout
+func DumpToStdout() Middleware {
 	return Dump(os.Stdout)
 }
 
 // DumpToStderr dumps requests and responses to os.Stderr
 func DumpToStderr() Middleware {
 	return Dump(os.Stderr)
-}
-
-// DumpToStdout dumps requests and responses to os.Stdout.
-// This is a correctly spelled alias of DumpToStout.
-func DumpToStdout() Middleware {
-	return Dump(os.Stdout)
 }
 
 type logFunc func(a ...any)
