@@ -59,6 +59,22 @@ func ReceiveTo(w io.Writer, opts ...Option) (*http.Response, int64, error) {
 	return DefaultRequester.ReceiveTo(context.Background(), w, opts...)
 }
 
+// ReceiveIntoWithError sends a request and decodes into S on success (2xx) or E on
+// non-success. The error return wraps ErrUnsuccessfulResponse for non-2xx responses.
+func ReceiveIntoWithError[S, E any](ctx context.Context, opts ...Option) (*http.Response, S, E, error) {
+	var success S
+
+	var failure E
+
+	merged := make([]Option, len(opts)+1)
+	copy(merged, opts)
+	merged[len(opts)] = OnError(&failure)
+
+	resp, err := DefaultRequester.ReceiveWithContext(ctx, &success, merged...)
+
+	return resp, success, failure, err
+}
+
 // ReceiveToWithContext streams the response body into the writer with a context.
 func ReceiveToWithContext(ctx context.Context, w io.Writer, opts ...Option) (*http.Response, int64, error) {
 	return DefaultRequester.ReceiveTo(ctx, w, opts...)

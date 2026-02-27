@@ -57,21 +57,14 @@ func Dump(w io.Writer) Middleware {
 	}
 }
 
-// DumpToStout dumps requests and responses to os.Stdout
-// Deprecated: use DumpToStdout instead.
-func DumpToStout() Middleware {
-    return Dump(os.Stdout)
+// DumpToStdout dumps requests and responses to os.Stdout
+func DumpToStdout() Middleware {
+	return Dump(os.Stdout)
 }
 
 // DumpToStderr dumps requests and responses to os.Stderr
 func DumpToStderr() Middleware {
-    return Dump(os.Stderr)
-}
-
-// DumpToStdout dumps requests and responses to os.Stdout.
-// This is a correctly spelled alias of DumpToStout.
-func DumpToStdout() Middleware {
-    return Dump(os.Stdout)
+	return Dump(os.Stderr)
 }
 
 type logFunc func(a ...any)
@@ -113,49 +106,49 @@ func ExpectCode(code int) Middleware {
 //
 // The response body will still be read and returned.
 func ExpectSuccessCode() Middleware {
-    return func(next Doer) Doer {
-        return DoerFunc(func(req *http.Request) (*http.Response, error) {
-            r, c := getCodeChecker(req)
-            c.code = expectSuccessCode
-            resp, err := next.Do(r)
+	return func(next Doer) Doer {
+		return DoerFunc(func(req *http.Request) (*http.Response, error) {
+			r, c := getCodeChecker(req)
+			c.code = expectSuccessCode
+			resp, err := next.Do(r)
 
-            return c.checkCode(resp, err)
-        })
-    }
+			return c.checkCode(resp, err)
+		})
+	}
 }
 
 // ExpectCodes generates an error if the response's status code does not match
 // any of the provided codes. If no codes are provided, it behaves like ExpectSuccessCode.
 // The response body is still read and returned.
 func ExpectCodes(codes ...int) Middleware {
-    if len(codes) == 0 {
-        return ExpectSuccessCode()
-    }
+	if len(codes) == 0 {
+		return ExpectSuccessCode()
+	}
 
-    allowed := make(map[int]struct{}, len(codes))
-    for _, code := range codes {
-        allowed[code] = struct{}{}
-    }
+	allowed := make(map[int]struct{}, len(codes))
+	for _, code := range codes {
+		allowed[code] = struct{}{}
+	}
 
-    return func(next Doer) Doer {
-        return DoerFunc(func(req *http.Request) (*http.Response, error) {
-            resp, err := next.Do(req)
-            if err != nil || resp == nil {
-                return resp, err
-            }
+	return func(next Doer) Doer {
+		return DoerFunc(func(req *http.Request) (*http.Response, error) {
+			resp, err := next.Do(req)
+			if err != nil || resp == nil {
+				return resp, err
+			}
 
-            if _, ok := allowed[resp.StatusCode]; !ok {
-                err = rout.HTTPErrorResponse(
-                    fmt.Errorf("%w: server returned unexpected status code. expected one of: %v, received: %d",
-                        ErrUnsuccessfulResponse,
-                        codes,
-                        resp.StatusCode,
-                    ))
-            }
+			if _, ok := allowed[resp.StatusCode]; !ok {
+				err = rout.HTTPErrorResponse(
+					fmt.Errorf("%w: server returned unexpected status code. expected one of: %v, received: %d",
+						ErrUnsuccessfulResponse,
+						codes,
+						resp.StatusCode,
+					))
+			}
 
-            return resp, err
-        })
-    }
+			return resp, err
+		})
+	}
 }
 
 type ctxKey int

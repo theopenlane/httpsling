@@ -4,7 +4,7 @@ import "net/http"
 
 // IsSuccess checks if the response status code indicates success
 func IsSuccess(resp *http.Response) bool {
-    code := resp.StatusCode
+	code := resp.StatusCode
 
-    return code >= http.StatusOK && code < 300
+	return code >= http.StatusOK && code < 300
 }

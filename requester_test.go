@@ -851,3 +851,122 @@ func ExampleRequester_Send() {
 	// Output:
 	// 204
 }
+
+func TestOnError_NonSuccessResponse(t *testing.T) {
+	type successBody struct {
+		ID int `json:"id"`
+	}
+
+	type errorBody struct {
+		Message string `json:"message"`
+		Code    int    `json:"code"`
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+
+		if err := json.NewEncoder(w).Encode(errorBody{Message: "validation failed", Code: 422}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	defer ts.Close()
+
+	var success successBody
+	var failure errorBody
+
+	resp, err := Receive(&success, Get(ts.URL), OnError(&failure))
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrUnsuccessfulResponse)
+	require.NotNil(t, resp)
+	assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+	assert.Equal(t, "validation failed", failure.Message)
+	assert.Equal(t, 422, failure.Code)
+	assert.Zero(t, success.ID)
+}
+
+func TestOnError_SuccessResponse(t *testing.T) {
+	type successBody struct {
+		ID int `json:"id"`
+	}
+
+	type errorBody struct {
+		Message string `json:"message"`
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(HeaderContentType, ContentTypeJSON)
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(successBody{ID: 42}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	defer ts.Close()
+
+	var success successBody
+	var failure errorBody
+
+	resp, err := Receive(&success, Get(ts.URL), OnError(&failure))
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, 42, success.ID)
+	assert.Empty(t, failure.Message)
+}
+
+func TestReceiveIntoWithError(t *testing.T) {
+	type successBody struct {
+		Name string `json:"name"`
+	}
+
+	type errorBody struct {
+		Error string `json:"error"`
+	}
+
+	t.Run("2xx decodes success", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set(HeaderContentType, ContentTypeJSON)
+			w.WriteHeader(http.StatusOK)
+
+			if err := json.NewEncoder(w).Encode(successBody{Name: "gopher"}); err != nil {
+				t.Errorf("failed to encode response: %v", err)
+			}
+		}))
+
+		defer ts.Close()
+
+		resp, success, failure, err := ReceiveIntoWithError[successBody, errorBody](context.Background(), Get(ts.URL))
+
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, "gopher", success.Name)
+		assert.Empty(t, failure.Error)
+	})
+
+	t.Run("non-2xx decodes failure", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set(HeaderContentType, ContentTypeJSON)
+			w.WriteHeader(http.StatusBadRequest)
+
+			if err := json.NewEncoder(w).Encode(errorBody{Error: "bad input"}); err != nil {
+				t.Errorf("failed to encode response: %v", err)
+			}
+		}))
+
+		defer ts.Close()
+
+		resp, success, failure, err := ReceiveIntoWithError[successBody, errorBody](context.Background(), Get(ts.URL))
+
+		require.Error(t, err)
+		require.ErrorIs(t, err, ErrUnsuccessfulResponse)
+		require.NotNil(t, resp)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "bad input", failure.Error)
+		assert.Empty(t, success.Name)
+	})
+}

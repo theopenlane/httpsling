@@ -74,7 +74,7 @@ func TestDumpToLog(t *testing.T) {
 	assert.Contains(t, respLog, `{"color":"red"}`)
 }
 
-func TestDumpToStout(t *testing.T) {
+func TestDumpToStdout(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(HeaderContentType, ContentTypeJSON)
 
@@ -103,7 +103,7 @@ func TestDumpToStout(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	resp, err := Receive(Get(ts.URL), DumpToStout())
+	resp, err := Receive(Get(ts.URL), DumpToStdout())
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestDumpToStout(t *testing.T) {
 	assert.Contains(t, out, `{"color":"red"}`)
 }
 
-func TestDumpToSterr(t *testing.T) {
+func TestDumpToStderr(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(HeaderContentType, ContentTypeJSON)
 
