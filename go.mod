@@ -1,12 +1,12 @@
 module github.com/theopenlane/httpsling
 
-go 1.25.7
+go 1.26.3
 
 require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/google/go-querystring v1.2.0
 	github.com/stretchr/testify v1.11.1
-	github.com/theopenlane/utils v0.7.0
+	github.com/theopenlane/utils v0.7.1
 )
 
 require (
