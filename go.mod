@@ -1,13 +1,6 @@
 module github.com/theopenlane/httpsling
 
-go 1.25.7
-
-require (
-	github.com/felixge/httpsnoop v1.0.4
-	github.com/google/go-querystring v1.2.0
-	github.com/stretchr/testify v1.12.1
-	github.com/theopenlane/utils v0.7.0
-)
+go 1.27.2
 
 require (
 	go.uber.org/mock v0.6.0 // indirect
@@ -18,6 +11,10 @@ require (
 )
 
 require (
+	github.com/felixge/httpsnoop v1.1.0
+	github.com/google/go-querystring v1.2.0
 	github.com/mazrean/formstream v1.1.3
+	github.com/stretchr/testify v1.12.1
 	github.com/theopenlane/echox v0.3.0
+	github.com/theopenlane/utils v0.7.4
 )
